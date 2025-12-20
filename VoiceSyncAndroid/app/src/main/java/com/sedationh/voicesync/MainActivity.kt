@@ -36,6 +36,24 @@ class MainActivity : ComponentActivity() {
     
     // 从 BuildConfig 获取端口号
     private val defaultPort = BuildConfig.SYNC_PORT
+    
+    /**
+     * 根据文本长度计算智能延迟时间（毫秒）
+     * 算法设计：
+     * - 0-25字：2秒
+     * - 25-100字：2-4秒（线性增长）
+     * - 100字以上：4秒（封顶）
+     */
+    private fun calculateSmartDelay(textLength: Int): Long {
+        return when {
+            textLength <= 25 -> 2000L  // 2秒
+            textLength <= 100 -> {
+                // 2秒 + (字数-25) * (2秒/75字) = 2-4秒
+                2000L + ((textLength - 25) * 2000L / 75).toLong()
+            }
+            else -> 4000L  // 4秒封顶
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,11 +63,21 @@ class MainActivity : ComponentActivity() {
                 var targetIp by remember { mutableStateOf("192.168.31.62:$defaultPort") } // 改成你的 IP
                 var content by remember { mutableStateOf("") }
                 var logMessage by remember { mutableStateOf("等待输入...") }
+                var autoSendEnabled by remember { mutableStateOf(true) } // 自动发送开关
                 var autoClearEnabled by remember { mutableStateOf(true) } // 4.2 自动清除开关
+                var isProductionMode by remember { mutableStateOf(false) } // 生产模式开关（默认开发模式）
+                var currentDelay by remember { mutableStateOf(2000L) } // 当前延迟时间（毫秒）
                 var syncRecords by remember { mutableStateOf(listOf<SyncRecord>()) } // 同步记录
                 val scope = rememberCoroutineScope()
                 
                 val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+                
+                // 端口切换函数
+                fun togglePort() {
+                    val currentIp = targetIp.substringBeforeLast(":")
+                    val newPort = if (isProductionMode) "4500" else "4501"
+                    targetIp = "$currentIp:$newPort"
+                }
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Column(
@@ -90,39 +118,52 @@ class MainActivity : ComponentActivity() {
                                 clearJob?.cancel() 
                                 
                                 // --- 自动发送逻辑 (Debounce) ---
-                                debounceJob = scope.launch {
-                                    delay(2000) // 等待 2 秒停顿
-                                    if (content.isNotEmpty()) {
-                                        logMessage = "检测到停顿，自动同步中..."
-                                        sendToMac(targetIp, content) { success, msg ->
-                                            val time = dateFormat.format(Date())
-                                            val record = SyncRecord(
-                                                timestamp = time,
-                                                content = content,
-                                                success = success,
-                                                message = msg
-                                            )
-                                            syncRecords = listOf(record) + syncRecords // 新记录在最前
-                                            
-                                            if (success) {
-                                                logMessage = "自动同步成功 ✅" + if (autoClearEnabled) "，3秒后自动清空" else ""
+                                // 只有当自动发送开关打开时才执行自动发送
+                                if (autoSendEnabled) {
+                                    // 根据当前文本长度计算智能延迟
+                                    currentDelay = calculateSmartDelay(newText.length)
+                                    
+                                    debounceJob = scope.launch {
+                                        delay(currentDelay) // 使用智能延迟
+                                        if (content.isNotEmpty()) {
+                                            logMessage = "检测到停顿，自动同步中..."
+                                            sendToMac(targetIp, content) { success, msg ->
+                                                val time = dateFormat.format(Date())
+                                                val record = SyncRecord(
+                                                    timestamp = time,
+                                                    content = content,
+                                                    success = success,
+                                                    message = msg
+                                                )
+                                                syncRecords = listOf(record) + syncRecords // 新记录在最前
                                                 
-                                                // --- 4.1 自动清除逻辑（受开关控制）---
-                                                if (autoClearEnabled) {
-                                                    clearJob = scope.launch {
-                                                        delay(3000) // 等待 3 秒
-                                                        content = "" // 执行清空
-                                                        logMessage = "内容已自动清空，请继续说话"
+                                                if (success) {
+                                                    logMessage = "自动同步成功 ✅" + if (autoClearEnabled) "，3秒后自动清空" else ""
+                                                    
+                                                    // --- 4.1 自动清除逻辑（受开关控制）---
+                                                    if (autoClearEnabled) {
+                                                        clearJob = scope.launch {
+                                                            delay(3000) // 等待 3 秒
+                                                            content = "" // 执行清空
+                                                            logMessage = "内容已自动清空，请继续说话"
+                                                        }
                                                     }
+                                                } else {
+                                                    logMessage = "同步失败: $msg"
                                                 }
-                                            } else {
-                                                logMessage = "同步失败: $msg"
                                             }
                                         }
                                     }
                                 }
                             },
-                            label = { Text("语音输入区 (停顿2秒自动同步)") },
+                            label = { 
+                                Text(
+                                    if (autoSendEnabled) 
+                                        "语音输入区 (停顿${String.format("%.1f", currentDelay / 1000.0)}秒自动同步)" 
+                                    else 
+                                        "语音输入区 (自动同步已关闭)"
+                                )
+                            },
                             modifier = Modifier.fillMaxWidth(),
                             minLines = 6
                         )
@@ -144,20 +185,86 @@ class MainActivity : ComponentActivity() {
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
-                                // 自动清空开关
+                                // 自动发送开关
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("自动清空", style = MaterialTheme.typography.bodyLarge)
+                                    Text("自动发送", style = MaterialTheme.typography.bodyLarge)
                                     Switch(
-                                        checked = autoClearEnabled,
-                                        onCheckedChange = { autoClearEnabled = it }
+                                        checked = autoSendEnabled,
+                                        onCheckedChange = { 
+                                            autoSendEnabled = it
+                                            // 如果关闭自动发送，也取消当前的发送任务
+                                            if (!it) {
+                                                debounceJob?.cancel()
+                                                clearJob?.cancel()
+                                            }
+                                        }
                                     )
                                 }
                                 
                                 Spacer(modifier = Modifier.height(8.dp))
+                                
+                                // 自动清空开关 (只有开启自动发送时才能启用)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "自动清空", 
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = if (autoSendEnabled) 
+                                            MaterialTheme.colorScheme.onSurfaceVariant 
+                                        else 
+                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                    )
+                                    Switch(
+                                        checked = autoClearEnabled,
+                                        onCheckedChange = { autoClearEnabled = it },
+                                        enabled = autoSendEnabled // 只有自动发送开启时才能操作
+                                    )
+                                }
+                                
+                                Spacer(modifier = Modifier.height(8.dp))
+                                
+                                // 手动发送按钮（只在关闭自动发送时显示）
+                                if (!autoSendEnabled) {
+                                    Button(
+                                        onClick = {
+                                            if (content.isNotEmpty()) {
+                                                logMessage = "手动同步中..."
+                                                sendToMac(targetIp, content) { success, msg ->
+                                                    val time = dateFormat.format(Date())
+                                                    val record = SyncRecord(
+                                                        timestamp = time,
+                                                        content = content,
+                                                        success = success,
+                                                        message = msg
+                                                    )
+                                                    syncRecords = listOf(record) + syncRecords
+                                                    
+                                                    if (success) {
+                                                        logMessage = "手动同步成功 ✅"
+                                                    } else {
+                                                        logMessage = "同步失败: $msg"
+                                                    }
+                                                }
+                                            } else {
+                                                logMessage = "内容为空，无法发送"
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                        modifier = Modifier.fillMaxWidth(),
+                                        enabled = content.isNotEmpty()
+                                    ) {
+                                        Text("立即发送")
+                                    }
+                                    
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                }
                                 
                                 // 手动清空按钮
                                 Button(
@@ -176,13 +283,51 @@ class MainActivity : ComponentActivity() {
                         Spacer(modifier = Modifier.height(12.dp))
 
                         // ========== 3. IP地址设置（下面）==========
-                        TextField(
-                            value = targetIp,
-                            onValueChange = { targetIp = it },
-                            label = { Text("Mac IP 地址") },
+                        Card(
                             modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                // 端口模式切换
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = if (isProductionMode) "🚀 生产模式 (4500)" else "🔧 开发模式 (4501)",
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                                        )
+                                        Text(
+                                            text = "快速切换端口",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                                        )
+                                    }
+                                    Switch(
+                                        checked = isProductionMode,
+                                        onCheckedChange = { 
+                                            isProductionMode = it
+                                            togglePort()
+                                            logMessage = if (it) "已切换到生产模式 (4500)" else "已切换到开发模式 (4501)"
+                                        }
+                                    )
+                                }
+                                
+                                Spacer(modifier = Modifier.height(8.dp))
+                                
+                                // IP地址输入框
+                                TextField(
+                                    value = targetIp,
+                                    onValueChange = { targetIp = it },
+                                    label = { Text("Mac IP 地址") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true
+                                )
+                            }
+                        }
 
                         Spacer(modifier = Modifier.height(12.dp))
 
