@@ -8,6 +8,35 @@
 import SwiftUI
 import Swifter
 import AppKit // 操作剪贴板必须引入
+import Network // 获取本机 IP
+
+// 获取本机局域网 IP 地址
+func getLocalIPAddress() -> String? {
+    var address: String?
+    var ifaddr: UnsafeMutablePointer<ifaddrs>?
+    
+    guard getifaddrs(&ifaddr) == 0, let firstAddr = ifaddr else { return nil }
+    defer { freeifaddrs(ifaddr) }
+    
+    for ptr in sequence(first: firstAddr, next: { $0.pointee.ifa_next }) {
+        let interface = ptr.pointee
+        let addrFamily = interface.ifa_addr.pointee.sa_family
+        
+        // 只要 IPv4 地址，排除 127.0.0.1
+        if addrFamily == UInt8(AF_INET) {
+            let name = String(cString: interface.ifa_name)
+            // en0 是 Wi-Fi，en1 可能是有线网
+            if name == "en0" || name == "en1" {
+                var hostname = [CChar](repeating: 0, count: Int(NI_MAXHOST))
+                if getnameinfo(interface.ifa_addr, socklen_t(interface.ifa_addr.pointee.sa_len),
+                               &hostname, socklen_t(hostname.count), nil, 0, NI_NUMERICHOST) == 0 {
+                    address = String(cString: hostname)
+                }
+            }
+        }
+    }
+    return address
+}
 
 // 2.2 数据模型：每一条同步记录
 struct SyncItem: Identifiable {
@@ -66,6 +95,8 @@ struct ContentView: View {
     @State private var statusText = "服务待启动..."
     @State private var showClearConfirm = false
     @State private var searchText = ""
+    @State private var localIP: String = "获取中..."
+    @State private var showCopiedTip = false
 
     var filteredHistory: [SyncItem] {
         if searchText.isEmpty {
@@ -76,6 +107,11 @@ struct ContentView: View {
     
     var isRunning: Bool {
         statusText.contains("运行中")
+    }
+    
+    // 完整的连接地址
+    var fullAddress: String {
+        "\(localIP):4500"
     }
 
     var body: some View {
@@ -100,14 +136,47 @@ struct ContentView: View {
                         .background(Color.accentColor.opacity(0.8))
                         .clipShape(Capsule())
                 }
-                
-                Text(":4500")
-                    .font(.system(size: 11, design: .monospaced))
-                    .foregroundColor(.secondary)
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.vertical, 10)
             .background(Color(NSColor.windowBackgroundColor))
+            
+            // IP 地址栏 - 点击复制
+            Button(action: {
+                syncManager.copyToClipboard(fullAddress)
+                showCopiedTip = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    showCopiedTip = false
+                }
+            }) {
+                HStack(spacing: 6) {
+                    Image(systemName: "network")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                    
+                    Text(fullAddress)
+                        .font(.system(size: 12, design: .monospaced))
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    if showCopiedTip {
+                        Text("已复制!")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.green)
+                            .transition(.opacity)
+                    } else {
+                        Image(systemName: "doc.on.doc")
+                            .font(.system(size: 10))
+                            .foregroundColor(.accentColor)
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color.accentColor.opacity(0.08))
+            }
+            .buttonStyle(PlainButtonStyle())
+            .help("点击复制地址，发送到手机")
             
             Divider()
             
@@ -163,6 +232,9 @@ struct ContentView: View {
             Text("确定要清空所有历史记录吗？")
         }
         .onAppear {
+            // 获取本机 IP
+            localIP = getLocalIPAddress() ?? "未知"
+            
             if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == nil {
                 setupServer()
             }
