@@ -20,11 +20,22 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            // 使用 debug 签名密钥，方便开发和测试
+            storeFile = file("${System.getProperty("user.home")}/.android/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix = ".dev"
             resValue("string", "app_name", "VoiceSync (Dev)")
             buildConfigField("int", "SYNC_PORT", "4501")
+            buildConfigField("String", "BUILD_TIME", "\"${project.findProperty("BUILD_TIME") ?: "Unknown"}\"")
         }
         release {
             isMinifyEnabled = false
@@ -32,8 +43,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
             resValue("string", "app_name", "VoiceSync")
             buildConfigField("int", "SYNC_PORT", "4500")
+            buildConfigField("String", "BUILD_TIME", "\"${project.findProperty("BUILD_TIME") ?: "Unknown"}\"")
         }
     }
     compileOptions {

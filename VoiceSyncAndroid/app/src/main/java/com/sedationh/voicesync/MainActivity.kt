@@ -52,14 +52,31 @@ class MainActivity : ComponentActivity() {
                 val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Column(modifier = Modifier.padding(innerPadding).padding(16.dp).fillMaxSize()) {
-                        // 标题
-                        Text(
-                            text = if (BuildConfig.DEBUG) "VoiceSync (Dev)" else "VoiceSync",
-                            style = MaterialTheme.typography.headlineMedium
-                        )
+                    Column(
+                        modifier = Modifier
+                            .padding(innerPadding)
+                            .padding(20.dp)
+                            .fillMaxSize()
+                    ) {
+                        // 标题和构建时间
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.Bottom
+                        ) {
+                            Text(
+                                text = if (BuildConfig.DEBUG) "VoiceSync (Dev)" else "VoiceSync",
+                                style = MaterialTheme.typography.headlineLarge,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "构建: ${BuildConfig.BUILD_TIME}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
+                        }
                         
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         // ========== 1. 语音输入区（最上面）==========
                         TextField(

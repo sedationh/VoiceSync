@@ -28,7 +28,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		9E67C5E52EF62FEC005ABE30 /* VoiceSyncMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VoiceSyncMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E67C5E52EF62FEC005ABE30 /* VoiceSyncMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = VoiceSyncMac.app; path = VoiceSyncMacDev.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9E67C5F32EF62FED005ABE30 /* VoiceSyncMacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VoiceSyncMacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9E67C5FD2EF62FED005ABE30 /* VoiceSyncMacUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VoiceSyncMacUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -413,6 +413,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(TARGET_NAME)$(VOICE_SYNC_DISPLAY_NAME_SUFFIX)";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -421,7 +422,6 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.sedationh.VoiceSyncMac$(VOICE_SYNC_BUNDLE_ID_SUFFIX)";
 				PRODUCT_NAME = "$(TARGET_NAME)$(VOICE_SYNC_PRODUCT_NAME_SUFFIX)";
-				INFOPLIST_KEY_CFBundleDisplayName = "$(TARGET_NAME)$(VOICE_SYNC_DISPLAY_NAME_SUFFIX)";
 				REGISTER_APP_GROUPS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -439,6 +439,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(TARGET_NAME)$(VOICE_SYNC_DISPLAY_NAME_SUFFIX)";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -447,7 +448,6 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.sedationh.VoiceSyncMac$(VOICE_SYNC_BUNDLE_ID_SUFFIX)";
 				PRODUCT_NAME = "$(TARGET_NAME)$(VOICE_SYNC_PRODUCT_NAME_SUFFIX)";
-				INFOPLIST_KEY_CFBundleDisplayName = "$(TARGET_NAME)$(VOICE_SYNC_DISPLAY_NAME_SUFFIX)";
 				REGISTER_APP_GROUPS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;

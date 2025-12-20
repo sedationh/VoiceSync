@@ -188,6 +188,11 @@ struct ContentView: View {
                 
                 Spacer()
                 
+                // 构建时间
+                Text("构建: \(BUILD_TIME)")
+                    .font(.system(size: 9))
+                    .foregroundColor(.secondary.opacity(0.6))
+                
                 if !appState.syncManager.history.isEmpty {
                     Text("\(appState.syncManager.history.count)")
                         .font(.system(size: 11, weight: .semibold))
