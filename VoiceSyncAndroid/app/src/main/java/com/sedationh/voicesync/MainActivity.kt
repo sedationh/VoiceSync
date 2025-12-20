@@ -29,6 +29,7 @@ class MainActivity : ComponentActivity() {
                 var targetIp by remember { mutableStateOf("192.168.31.62:4500") } // 改成你的 IP
                 var content by remember { mutableStateOf("") }
                 var logMessage by remember { mutableStateOf("等待输入...") }
+                var autoClearEnabled by remember { mutableStateOf(true) } // 4.2 自动清除开关
                 val scope = rememberCoroutineScope()
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -64,13 +65,15 @@ class MainActivity : ComponentActivity() {
                                         logMessage = "检测到停顿，自动同步中..."
                                         sendToMac(targetIp, content) { success, msg ->
                                             if (success) {
-                                                logMessage = "自动同步成功 ✅，3秒后自动清空"
+                                                logMessage = "自动同步成功 ✅" + if (autoClearEnabled) "，3秒后自动清空" else ""
                                                 
-                                                // --- 4.1 自动清除逻辑 ---
-                                                clearJob = scope.launch {
-                                                    delay(3000) // 等待 3 秒
-                                                    content = "" // 执行清空
-                                                    logMessage = "内容已自动清空，请继续说话"
+                                                // --- 4.1 自动清除逻辑（受开关控制）---
+                                                if (autoClearEnabled) {
+                                                    clearJob = scope.launch {
+                                                        delay(3000) // 等待 3 秒
+                                                        content = "" // 执行清空
+                                                        logMessage = "内容已自动清空，请继续说话"
+                                                    }
                                                 }
                                             } else {
                                                 logMessage = "同步失败: $msg"
@@ -84,7 +87,22 @@ class MainActivity : ComponentActivity() {
                             minLines = 8
                         )
 
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // 4.2 自动清除开关
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                        ) {
+                            Text("同步后自动清空", style = MaterialTheme.typography.bodyMedium)
+                            Switch(
+                                checked = autoClearEnabled,
+                                onCheckedChange = { autoClearEnabled = it }
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         // 手动清除按钮
                         Button(

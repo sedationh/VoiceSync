@@ -19,6 +19,7 @@ struct SyncItem: Identifiable {
 // 核心管理类
 class SyncManager: ObservableObject {
     @Published var history: [SyncItem] = []
+    @Published var lastSyncTime: Date? = nil
     
     // 2.1 & 2.3 核心方法：更新剪贴板并记录历史
     func handleNewContent(_ text: String) {
@@ -32,6 +33,7 @@ class SyncManager: ObservableObject {
             // 2. 存入历史列表（插到最前面）
             let newItem = SyncItem(content: text)
             self.history.insert(newItem, at: 0)
+            self.lastSyncTime = Date()
             
             // 限制历史记录数量，防止内存占用过大（可选）
             if self.history.count > 50 {
@@ -39,71 +41,219 @@ class SyncManager: ObservableObject {
             }
         }
     }
+    
+    // 清空历史记录
+    func clearHistory() {
+        history.removeAll()
+    }
+    
+    // 删除单条记录
+    func deleteItem(_ item: SyncItem) {
+        history.removeAll { $0.id == item.id }
+    }
+    
+    // 仅复制到剪贴板（不添加历史记录）
+    func copyToClipboard(_ text: String) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.declareTypes([.string], owner: nil)
+        pasteboard.setString(text, forType: .string)
+    }
 }
 
 struct ContentView: View {
     private let server = HttpServer()
-    @StateObject private var syncManager = SyncManager() // 观察管理类
+    @StateObject private var syncManager = SyncManager()
     @State private var statusText = "服务待启动..."
+    @State private var showClearConfirm = false
+    @State private var searchText = ""
+
+    var filteredHistory: [SyncItem] {
+        if searchText.isEmpty {
+            return syncManager.history
+        }
+        return syncManager.history.filter { $0.content.localizedCaseInsensitiveContains(searchText) }
+    }
+    
+    var isRunning: Bool {
+        statusText.contains("运行中")
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            // 顶部状态栏
-            HStack {
+            // 顶部状态栏 - 简洁设计
+            HStack(spacing: 8) {
                 Circle()
-                    .fill(statusText.contains("运行中") ? Color.green : Color.red)
+                    .fill(isRunning ? Color.green : Color.red)
                     .frame(width: 8, height: 8)
-                Text(statusText)
-                    .font(.subheadline)
+                Text(isRunning ? "运行中" : "已停止")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(isRunning ? .green : .red)
+                
                 Spacer()
-                Text("端口: 4500").font(.caption).foregroundColor(.secondary)
-            }
-            .padding()
-            .background(Color.gray.opacity(0.05))
-
-            // 2.4 历史记录列表
-            List(syncManager.history) { item in
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(item.content)
-                        .lineLimit(2)
-                        .font(.body)
-                    Text(item.timestamp, style: .time)
-                        .font(.system(size: 10))
-                        .foregroundColor(.secondary)
+                
+                if !syncManager.history.isEmpty {
+                    Text("\(syncManager.history.count)")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.accentColor.opacity(0.8))
+                        .clipShape(Capsule())
                 }
-                .padding(.vertical, 4)
-                .contextMenu {
-                    Button("重新复制") {
-                        syncManager.handleNewContent(item.content)
-                    }
-                }
+                
+                Text(":4500")
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(.secondary)
             }
-            .listStyle(InsetListStyle())
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color(NSColor.windowBackgroundColor))
             
+            Divider()
+            
+            // 主内容区
             if syncManager.history.isEmpty {
-                VStack {
-                    Spacer()
-                    Text("等待 Android 端同步...").foregroundColor(.secondary)
-                    Spacer()
+                // 空状态
+                emptyStateView
+            } else {
+                // 搜索栏
+                searchBar
+                    .padding(.horizontal, 12)
+                    .padding(.top, 12)
+                    .padding(.bottom, 4)
+                
+                // 历史列表
+                ScrollView {
+                    LazyVStack(spacing: 8) {
+                        ForEach(filteredHistory) { item in
+                            SyncItemCard(item: item, onCopy: {
+                                syncManager.copyToClipboard(item.content)
+                            }, onDelete: {
+                                withAnimation(.easeOut(duration: 0.2)) {
+                                    syncManager.deleteItem(item)
+                                }
+                            })
+                        }
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
                 }
+                
+                if filteredHistory.isEmpty && !searchText.isEmpty {
+                    Text("无匹配结果")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                
+                Divider()
+                
+                // 底部栏
+                bottomBar
             }
         }
-        .frame(width: 350, height: 500)
+        .frame(width: 340, height: 480)
+        .background(Color(NSColor.controlBackgroundColor))
+        .alert("确认清空", isPresented: $showClearConfirm) {
+            Button("取消", role: .cancel) { }
+            Button("清空", role: .destructive) {
+                withAnimation { syncManager.clearHistory() }
+            }
+        } message: {
+            Text("确定要清空所有历史记录吗？")
+        }
         .onAppear {
             if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == nil {
                 setupServer()
             }
         }
     }
+    
+    // 空状态视图
+    private var emptyStateView: some View {
+        VStack(spacing: 16) {
+            Spacer()
+            
+            ZStack {
+                Circle()
+                    .fill(Color.accentColor.opacity(0.1))
+                    .frame(width: 80, height: 80)
+                Image(systemName: "arrow.right.circle")
+                    .font(.system(size: 36, weight: .light))
+                    .foregroundColor(.accentColor)
+            }
+            
+            VStack(spacing: 6) {
+                Text("等待同步")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                Text("从 Android 设备发送内容")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+        }
+    }
+    
+    // 搜索栏
+    private var searchBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 12))
+                .foregroundColor(.secondary)
+            
+            TextField("搜索...", text: $searchText)
+                .textFieldStyle(PlainTextFieldStyle())
+                .font(.system(size: 13))
+            
+            if !searchText.isEmpty {
+                Button(action: { searchText = "" }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+        .padding(8)
+        .background(Color(NSColor.textBackgroundColor))
+        .cornerRadius(8)
+    }
+    
+    // 底部栏
+    private var bottomBar: some View {
+        HStack {
+            if let lastTime = syncManager.lastSyncTime {
+                Image(systemName: "clock")
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+                Text(lastTime, style: .relative)
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            Button(action: { showClearConfirm = true }) {
+                Image(systemName: "trash")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .help("清空所有记录")
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(Color(NSColor.windowBackgroundColor))
+    }
 
     func setupServer() {
-        // 2.3 完善路由逻辑
         server["/sync"] = { request in
             let body = String(bytes: request.body, encoding: .utf8) ?? ""
             
             if !body.isEmpty {
                 print("收到内容并注入剪贴板: \(body)")
-                // 调用管理类处理内容
                 syncManager.handleNewContent(body)
                 return .ok(.text("Success"))
             }
@@ -112,9 +262,71 @@ struct ContentView: View {
 
         do {
             try server.start(4500)
-            statusText = "服务运行中 (Port 4500)"
+            statusText = "服务运行中"
         } catch {
             statusText = "启动失败: \(error)"
+        }
+    }
+}
+
+// 卡片式记录组件
+struct SyncItemCard: View {
+    let item: SyncItem
+    let onCopy: () -> Void
+    let onDelete: () -> Void
+    @State private var isHovered = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(item.content)
+                .font(.system(size: 13))
+                .foregroundColor(.primary)
+                .lineLimit(3)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            
+            HStack {
+                Text(item.timestamp, style: .time)
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+                
+                if isHovered {
+                    HStack(spacing: 12) {
+                        Button(action: onCopy) {
+                            Image(systemName: "doc.on.doc")
+                                .font(.system(size: 11))
+                                .foregroundColor(.accentColor)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .help("复制")
+                        
+                        Button(action: onDelete) {
+                            Image(systemName: "trash")
+                                .font(.system(size: 11))
+                                .foregroundColor(.red.opacity(0.8))
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .help("删除")
+                    }
+                    .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                }
+            }
+        }
+        .padding(12)
+        .background(Color(NSColor.textBackgroundColor))
+        .cornerRadius(10)
+        .shadow(color: .black.opacity(0.04), radius: 2, x: 0, y: 1)
+        .contentShape(Rectangle())
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovered = hovering
+            }
+        }
+        .contextMenu {
+            Button("复制") { onCopy() }
+            Divider()
+            Button("删除", role: .destructive) { onDelete() }
         }
     }
 }
