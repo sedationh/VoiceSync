@@ -50,6 +50,7 @@ class SyncManager: ObservableObject {
     @Published var history: [SyncItem] = []
     @Published var lastSyncTime: Date? = nil
     @Published var autoPasteEnabled: Bool = true // 自动粘贴开关
+    @Published var autoSendEnabled: Bool = false // 自动发送开关
     
     // 2.1 & 2.3 核心方法：更新剪贴板并记录历史
     func handleNewContent(_ text: String) {
@@ -86,10 +87,18 @@ class SyncManager: ObservableObject {
             print("辅助功能权限状态: \(trusted)")
             
             if !trusted {
-                print("⚠️ 需要授权辅助功能权限！请前往：系统设置 → 隐私与安全性 → 辅助功能")
+                print("⚠️ 需要授权辅助功能权限！正在尝试弹出系统授权框...")
                 // 提示用户授权
                 let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
-                AXIsProcessTrustedWithOptions(options as CFDictionary)
+                let _ = AXIsProcessTrustedWithOptions(options as CFDictionary)
+                
+                // 如果系统弹窗没出来，引导用户手动打开
+                print("💡 如果没有看到系统弹窗，请手动前往：系统设置 → 隐私与安全性 → 辅助功能，并添加/勾选 [VoiceSyncMac Dev]")
+                
+                // 尝试直接打开系统设置页
+                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                    NSWorkspace.shared.open(url)
+                }
                 return
             }
             
@@ -112,6 +121,26 @@ class SyncManager: ObservableObject {
             keyUp.post(tap: .cghidEventTap)
             
             print("✅ 已发送 Cmd+V 粘贴事件")
+
+            // 4. 自动发送（如果启用）
+            if self.autoSendEnabled {
+                // 稍微增加延迟，确保粘贴操作已完成且修饰键已完全释放
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    guard let enterDown = CGEvent(keyboardEventSource: source, virtualKey: 36, keyDown: true),
+                          let enterUp = CGEvent(keyboardEventSource: source, virtualKey: 36, keyDown: false) else {
+                        print("❌ 创建 Enter 键事件失败")
+                        return
+                    }
+                    
+                    // 明确清除所有修饰键标志，防止 Command 键“粘连”
+                    enterDown.flags = []
+                    enterUp.flags = []
+                    
+                    enterDown.post(tap: .cghidEventTap)
+                    enterUp.post(tap: .cghidEventTap)
+                    print("✅ 已发送 Enter 发送事件")
+                }
+            }
         }
     }
     
@@ -222,6 +251,17 @@ struct ContentView: View {
                     .padding(.horizontal, 12)
                     .padding(.top, 12)
                     .padding(.bottom, 4)
+                
+                // 快捷设置
+                HStack(spacing: 16) {
+                    Toggle("自动粘贴", isOn: $appState.syncManager.autoPasteEnabled)
+                        .controlSize(.small)
+                    Toggle("自动发送", isOn: $appState.syncManager.autoSendEnabled)
+                        .controlSize(.small)
+                    Spacer()
+                }
+                .padding(.horizontal, 14)
+                .padding(.bottom, 4)
                 
                 // 历史列表
                 ScrollView {

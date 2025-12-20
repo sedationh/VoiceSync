@@ -164,6 +164,11 @@ struct MenuBarView: View {
             
             Divider().opacity(0.5)
             
+            // 自动发送开关
+            autoSendSection
+            
+            Divider().opacity(0.5)
+            
             // IP 地址区
             addressSection
             
@@ -201,6 +206,33 @@ struct MenuBarView: View {
             Spacer()
             
             Toggle("", isOn: $appState.syncManager.autoPasteEnabled)
+                .toggleStyle(.switch)
+                .controlSize(.small)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+    }
+    
+    // MARK: - 自动发送开关
+    private var autoSendSection: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "paperplane")
+                .font(.system(size: 14))
+                .foregroundStyle(.secondary)
+                .frame(width: 24)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text("自动发送")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.primary)
+                Text("粘贴后自动按回车发送")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+            }
+            
+            Spacer()
+            
+            Toggle("", isOn: $appState.syncManager.autoSendEnabled)
                 .toggleStyle(.switch)
                 .controlSize(.small)
         }
