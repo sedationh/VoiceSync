@@ -19,6 +19,7 @@ class MainActivity : ComponentActivity() {
     private val client = OkHttpClient()
     // 用于控制自动发送的协程任务
     private var debounceJob: Job? = null 
+    private var clearJob: Job? = null // 4.1 用于控制自动清空的协程任务
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,14 +53,28 @@ class MainActivity : ComponentActivity() {
                                 content = newText
                                 logMessage = "正在录入..."
                                 
+                                // 只要用户在操作，就取消所有的自动任务
+                                debounceJob?.cancel()
+                                clearJob?.cancel() 
+                                
                                 // --- 自动发送逻辑 (Debounce) ---
-                                debounceJob?.cancel() // 只要在动，就取消上一个计时器
                                 debounceJob = scope.launch {
                                     delay(2000) // 等待 2 秒停顿
                                     if (content.isNotEmpty()) {
                                         logMessage = "检测到停顿，自动同步中..."
                                         sendToMac(targetIp, content) { success, msg ->
-                                            logMessage = if (success) "自动同步成功 ✅" else "同步失败: $msg"
+                                            if (success) {
+                                                logMessage = "自动同步成功 ✅，3秒后自动清空"
+                                                
+                                                // --- 4.1 自动清除逻辑 ---
+                                                clearJob = scope.launch {
+                                                    delay(3000) // 等待 3 秒
+                                                    content = "" // 执行清空
+                                                    logMessage = "内容已自动清空，请继续说话"
+                                                }
+                                            } else {
+                                                logMessage = "同步失败: $msg"
+                                            }
                                         }
                                     }
                                 }
@@ -73,11 +88,11 @@ class MainActivity : ComponentActivity() {
 
                         // 手动清除按钮
                         Button(
-                            onClick = { content = ""; logMessage = "已清空" },
+                            onClick = { content = ""; logMessage = "手动已清空" },
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("手动清空输入框")
+                            Text("手动强制清空")
                         }
 
                         Spacer(modifier = Modifier.height(20.dp))
