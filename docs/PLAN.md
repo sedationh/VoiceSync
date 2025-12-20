@@ -4,14 +4,14 @@
 
 > 目标：实现 Android 到 Mac 的最基本字符串传输。
 
-* [ ] **1.1 [Mac] 环境初始化**
+* [x] **1.1 [Mac] 环境初始化**
 * 创建 macOS SwiftUI 项目 `VoiceSyncMac`。
 * 在 `Signing & Capabilities` 中开启 `App Sandbox` -> `Incoming Connections (Server)` 权限。
 
-* [ ] **1.2 [Mac] 集成 HTTP 服务库**
+* [x] **1.2 [Mac] 集成 HTTP 服务库**
 * 通过 SPM (Swift Package Manager) 引入 `Swifter` 或 `FlyingFox` 库。
 
-* [ ] **1.3 [Mac] 编写基础接收逻辑**
+* [x] **1.3 [Mac] 编写基础接收逻辑**
 * 启动监听 4500 端口。
 * 编写 `POST /sync` 接口，解析 Body 并在控制台 `print` 接收到的内容。
 
