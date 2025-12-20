@@ -12,7 +12,7 @@
 * 通过 SPM (Swift Package Manager) 引入 `Swifter` 或 `FlyingFox` 库。
 
 * [ ] **1.3 [Mac] 编写基础接收逻辑**
-* 启动监听 3000 端口。
+* 启动监听 4500 端口。
 * 编写 `POST /sync` 接口，解析 Body 并在控制台 `print` 接收到的内容。
 
 * [ ] **1.4 [Android] 极简发送端**

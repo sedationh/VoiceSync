@@ -1,0 +1,574 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		9E67C61F2EF6312B005ABE30 /* Swifter in Frameworks */ = {isa = PBXBuildFile; productRef = 9E67C61E2EF6312B005ABE30 /* Swifter */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		9E67C5F42EF62FED005ABE30 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9E67C5DD2EF62FEC005ABE30 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9E67C5E42EF62FEC005ABE30;
+			remoteInfo = VoiceSyncMac;
+		};
+		9E67C5FE2EF62FED005ABE30 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9E67C5DD2EF62FEC005ABE30 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9E67C5E42EF62FEC005ABE30;
+			remoteInfo = VoiceSyncMac;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		9E67C5E52EF62FEC005ABE30 /* VoiceSyncMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VoiceSyncMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E67C5F32EF62FED005ABE30 /* VoiceSyncMacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VoiceSyncMacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E67C5FD2EF62FED005ABE30 /* VoiceSyncMacUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VoiceSyncMacUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		9E67C5E72EF62FEC005ABE30 /* VoiceSyncMac */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = VoiceSyncMac;
+			sourceTree = "<group>";
+		};
+		9E67C5F62EF62FED005ABE30 /* VoiceSyncMacTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = VoiceSyncMacTests;
+			sourceTree = "<group>";
+		};
+		9E67C6002EF62FED005ABE30 /* VoiceSyncMacUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = VoiceSyncMacUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		9E67C5E22EF62FEC005ABE30 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9E67C61F2EF6312B005ABE30 /* Swifter in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9E67C5F02EF62FED005ABE30 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9E67C5FA2EF62FED005ABE30 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		9E67C5DC2EF62FEC005ABE30 = {
+			isa = PBXGroup;
+			children = (
+				9E67C5E72EF62FEC005ABE30 /* VoiceSyncMac */,
+				9E67C5F62EF62FED005ABE30 /* VoiceSyncMacTests */,
+				9E67C6002EF62FED005ABE30 /* VoiceSyncMacUITests */,
+				9E67C5E62EF62FEC005ABE30 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		9E67C5E62EF62FEC005ABE30 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				9E67C5E52EF62FEC005ABE30 /* VoiceSyncMac.app */,
+				9E67C5F32EF62FED005ABE30 /* VoiceSyncMacTests.xctest */,
+				9E67C5FD2EF62FED005ABE30 /* VoiceSyncMacUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		9E67C5E42EF62FEC005ABE30 /* VoiceSyncMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9E67C6072EF62FED005ABE30 /* Build configuration list for PBXNativeTarget "VoiceSyncMac" */;
+			buildPhases = (
+				9E67C5E12EF62FEC005ABE30 /* Sources */,
+				9E67C5E22EF62FEC005ABE30 /* Frameworks */,
+				9E67C5E32EF62FEC005ABE30 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				9E67C5E72EF62FEC005ABE30 /* VoiceSyncMac */,
+			);
+			name = VoiceSyncMac;
+			packageProductDependencies = (
+				9E67C61E2EF6312B005ABE30 /* Swifter */,
+			);
+			productName = VoiceSyncMac;
+			productReference = 9E67C5E52EF62FEC005ABE30 /* VoiceSyncMac.app */;
+			productType = "com.apple.product-type.application";
+		};
+		9E67C5F22EF62FED005ABE30 /* VoiceSyncMacTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9E67C60A2EF62FED005ABE30 /* Build configuration list for PBXNativeTarget "VoiceSyncMacTests" */;
+			buildPhases = (
+				9E67C5EF2EF62FED005ABE30 /* Sources */,
+				9E67C5F02EF62FED005ABE30 /* Frameworks */,
+				9E67C5F12EF62FED005ABE30 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				9E67C5F52EF62FED005ABE30 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				9E67C5F62EF62FED005ABE30 /* VoiceSyncMacTests */,
+			);
+			name = VoiceSyncMacTests;
+			packageProductDependencies = (
+			);
+			productName = VoiceSyncMacTests;
+			productReference = 9E67C5F32EF62FED005ABE30 /* VoiceSyncMacTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		9E67C5FC2EF62FED005ABE30 /* VoiceSyncMacUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9E67C60D2EF62FED005ABE30 /* Build configuration list for PBXNativeTarget "VoiceSyncMacUITests" */;
+			buildPhases = (
+				9E67C5F92EF62FED005ABE30 /* Sources */,
+				9E67C5FA2EF62FED005ABE30 /* Frameworks */,
+				9E67C5FB2EF62FED005ABE30 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				9E67C5FF2EF62FED005ABE30 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				9E67C6002EF62FED005ABE30 /* VoiceSyncMacUITests */,
+			);
+			name = VoiceSyncMacUITests;
+			packageProductDependencies = (
+			);
+			productName = VoiceSyncMacUITests;
+			productReference = 9E67C5FD2EF62FED005ABE30 /* VoiceSyncMacUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		9E67C5DD2EF62FEC005ABE30 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1630;
+				LastUpgradeCheck = 1630;
+				TargetAttributes = {
+					9E67C5E42EF62FEC005ABE30 = {
+						CreatedOnToolsVersion = 16.3;
+					};
+					9E67C5F22EF62FED005ABE30 = {
+						CreatedOnToolsVersion = 16.3;
+						TestTargetID = 9E67C5E42EF62FEC005ABE30;
+					};
+					9E67C5FC2EF62FED005ABE30 = {
+						CreatedOnToolsVersion = 16.3;
+						TestTargetID = 9E67C5E42EF62FEC005ABE30;
+					};
+				};
+			};
+			buildConfigurationList = 9E67C5E02EF62FEC005ABE30 /* Build configuration list for PBXProject "VoiceSyncMac" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 9E67C5DC2EF62FEC005ABE30;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				9E67C61D2EF6312B005ABE30 /* XCRemoteSwiftPackageReference "swifter" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 9E67C5E62EF62FEC005ABE30 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				9E67C5E42EF62FEC005ABE30 /* VoiceSyncMac */,
+				9E67C5F22EF62FED005ABE30 /* VoiceSyncMacTests */,
+				9E67C5FC2EF62FED005ABE30 /* VoiceSyncMacUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		9E67C5E32EF62FEC005ABE30 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9E67C5F12EF62FED005ABE30 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9E67C5FB2EF62FED005ABE30 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		9E67C5E12EF62FEC005ABE30 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9E67C5EF2EF62FED005ABE30 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9E67C5F92EF62FED005ABE30 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		9E67C5F52EF62FED005ABE30 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9E67C5E42EF62FEC005ABE30 /* VoiceSyncMac */;
+			targetProxy = 9E67C5F42EF62FED005ABE30 /* PBXContainerItemProxy */;
+		};
+		9E67C5FF2EF62FED005ABE30 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9E67C5E42EF62FEC005ABE30 /* VoiceSyncMac */;
+			targetProxy = 9E67C5FE2EF62FED005ABE30 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		9E67C6052EF62FED005ABE30 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.4;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		9E67C6062EF62FED005ABE30 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.4;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		9E67C6082EF62FED005ABE30 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = VoiceSyncMac/VoiceSyncMac.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sedationh.VoiceSyncMac;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		9E67C6092EF62FED005ABE30 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = VoiceSyncMac/VoiceSyncMac.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sedationh.VoiceSyncMac;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		9E67C60B2EF62FED005ABE30 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sedationh.VoiceSyncMacTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/VoiceSyncMac.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/VoiceSyncMac";
+			};
+			name = Debug;
+		};
+		9E67C60C2EF62FED005ABE30 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sedationh.VoiceSyncMacTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/VoiceSyncMac.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/VoiceSyncMac";
+			};
+			name = Release;
+		};
+		9E67C60E2EF62FED005ABE30 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sedationh.VoiceSyncMacUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = VoiceSyncMac;
+			};
+			name = Debug;
+		};
+		9E67C60F2EF62FED005ABE30 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sedationh.VoiceSyncMacUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = VoiceSyncMac;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		9E67C5E02EF62FEC005ABE30 /* Build configuration list for PBXProject "VoiceSyncMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9E67C6052EF62FED005ABE30 /* Debug */,
+				9E67C6062EF62FED005ABE30 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9E67C6072EF62FED005ABE30 /* Build configuration list for PBXNativeTarget "VoiceSyncMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9E67C6082EF62FED005ABE30 /* Debug */,
+				9E67C6092EF62FED005ABE30 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9E67C60A2EF62FED005ABE30 /* Build configuration list for PBXNativeTarget "VoiceSyncMacTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9E67C60B2EF62FED005ABE30 /* Debug */,
+				9E67C60C2EF62FED005ABE30 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9E67C60D2EF62FED005ABE30 /* Build configuration list for PBXNativeTarget "VoiceSyncMacUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9E67C60E2EF62FED005ABE30 /* Debug */,
+				9E67C60F2EF62FED005ABE30 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		9E67C61D2EF6312B005ABE30 /* XCRemoteSwiftPackageReference "swifter" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/httpswift/swifter.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.5.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		9E67C61E2EF6312B005ABE30 /* Swifter */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9E67C61D2EF6312B005ABE30 /* XCRemoteSwiftPackageReference "swifter" */;
+			productName = Swifter;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 9E67C5DD2EF62FEC005ABE30 /* Project object */;
+}
