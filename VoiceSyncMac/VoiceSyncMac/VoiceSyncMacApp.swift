@@ -14,7 +14,7 @@ class AppState: ObservableObject {
     static let shared = AppState()
     
     let server = HttpServer()
-    let syncManager = SyncManager()
+    var syncManager = SyncManager()
     
     @Published var isRunning = false
     @Published var localIP: String = "获取中..."
@@ -145,6 +145,11 @@ struct MenuBarView: View {
             
             Divider().opacity(0.5)
             
+            // 自动粘贴开关
+            autoPasteSection
+            
+            Divider().opacity(0.5)
+            
             // IP 地址区
             addressSection
             
@@ -160,6 +165,33 @@ struct MenuBarView: View {
         }
         .frame(width: 300)
         .background(.regularMaterial)
+    }
+    
+    // MARK: - 自动粘贴开关
+    private var autoPasteSection: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "doc.on.clipboard")
+                .font(.system(size: 14))
+                .foregroundStyle(.secondary)
+                .frame(width: 24)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text("自动粘贴")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.primary)
+                Text("同步后自动输入到光标位置")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+            }
+            
+            Spacer()
+            
+            Toggle("", isOn: $appState.syncManager.autoPasteEnabled)
+                .toggleStyle(.switch)
+                .controlSize(.small)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
     }
     
     // MARK: - 头部

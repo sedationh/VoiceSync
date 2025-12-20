@@ -1,0 +1,111 @@
+# ============================================
+# VoiceSync 项目 .gitignore
+# ============================================
+
+# ==================== 构建产物 ====================
+dist/
+*.apk
+*.app
+*.ipa
+*.dSYM
+*.dSYM.zip
+
+# ==================== macOS / Xcode ====================
+# Xcode 构建目录
+VoiceSyncMac/build/
+VoiceSyncMac/DerivedData/
+VoiceSyncMac/*.xcodeproj/xcuserdata/
+VoiceSyncMac/*.xcodeproj/project.xcworkspace/xcuserdata/
+VoiceSyncMac/*.xcworkspace/xcuserdata/
+
+# Xcode 用户特定文件
+*.xcuserstate
+*.xcuserdatad/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+
+# Swift Package Manager
+VoiceSyncMac/.build/
+VoiceSyncMac/Packages/
+VoiceSyncMac/Package.resolved
+
+# ==================== Android ====================
+# 已在 VoiceSyncAndroid/.gitignore 中定义
+VoiceSyncAndroid/build/
+VoiceSyncAndroid/app/build/
+VoiceSyncAndroid/.gradle/
+VoiceSyncAndroid/local.properties
+VoiceSyncAndroid/*.iml
+VoiceSyncAndroid/.idea/workspace.xml
+VoiceSyncAndroid/.idea/caches/
+VoiceSyncAndroid/.idea/libraries/
+VoiceSyncAndroid/.idea/modules.xml
+VoiceSyncAndroid/.idea/navEditor.xml
+VoiceSyncAndroid/.idea/assetWizardSettings.xml
+VoiceSyncAndroid/captures/
+VoiceSyncAndroid/.externalNativeBuild/
+VoiceSyncAndroid/.cxx/
+
+# ==================== 通用 ====================
+# macOS 系统文件
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 日志文件
+*.log
+logs/
+
+# 临时文件
+*.tmp
+*.temp
+.cache/
+tmp/
+temp/
+
+# 密钥和证书 (敏感信息)
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+*.mobileprovision
+*.provisionprofile
+secrets.properties
+keystore.properties
+
+# 环境配置
+.env
+.env.local
+.env.*.local
+
+# Node.js (如果有)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python (如果有)
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+.venv/

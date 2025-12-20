@@ -49,6 +49,7 @@ struct SyncItem: Identifiable {
 class SyncManager: ObservableObject {
     @Published var history: [SyncItem] = []
     @Published var lastSyncTime: Date? = nil
+    @Published var autoPasteEnabled: Bool = true // 自动粘贴开关
     
     // 2.1 & 2.3 核心方法：更新剪贴板并记录历史
     func handleNewContent(_ text: String) {
@@ -68,6 +69,49 @@ class SyncManager: ObservableObject {
             if self.history.count > 50 {
                 self.history.removeLast()
             }
+            
+            // 3. 自动粘贴（如果启用）
+            if self.autoPasteEnabled {
+                self.simulatePaste()
+            }
+        }
+    }
+    
+    // 模拟 Cmd+V 粘贴操作
+    private func simulatePaste() {
+        // 稍微延迟以确保剪贴板已更新
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            // 首先检查辅助功能权限
+            let trusted = AXIsProcessTrusted()
+            print("辅助功能权限状态: \(trusted)")
+            
+            if !trusted {
+                print("⚠️ 需要授权辅助功能权限！请前往：系统设置 → 隐私与安全性 → 辅助功能")
+                // 提示用户授权
+                let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
+                AXIsProcessTrustedWithOptions(options as CFDictionary)
+                return
+            }
+            
+            // 创建 Cmd+V 按键事件
+            let source = CGEventSource(stateID: .hidSystemState)
+            
+            // V 键的虚拟键码是 9
+            guard let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 9, keyDown: true),
+                  let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 9, keyDown: false) else {
+                print("❌ 创建键盘事件失败")
+                return
+            }
+            
+            // 添加 Command 修饰键
+            keyDown.flags = .maskCommand
+            keyUp.flags = .maskCommand
+            
+            // 发送按键事件
+            keyDown.post(tap: .cghidEventTap)
+            keyUp.post(tap: .cghidEventTap)
+            
+            print("✅ 已发送 Cmd+V 粘贴事件")
         }
     }
     
