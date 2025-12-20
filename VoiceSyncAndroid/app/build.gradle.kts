@@ -21,12 +21,19 @@ android {
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix = ".dev"
+            resValue("string", "app_name", "VoiceSync (Dev)")
+            buildConfigField("int", "SYNC_PORT", "4501")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            resValue("string", "app_name", "VoiceSync")
+            buildConfigField("int", "SYNC_PORT", "4500")
         }
     }
     compileOptions {
@@ -38,6 +45,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

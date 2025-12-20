@@ -20,13 +20,16 @@ class MainActivity : ComponentActivity() {
     // 用于控制自动发送的协程任务
     private var debounceJob: Job? = null 
     private var clearJob: Job? = null // 4.1 用于控制自动清空的协程任务
+    
+    // 从 BuildConfig 获取端口号
+    private val defaultPort = BuildConfig.SYNC_PORT
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             VoiceSyncAndroidTheme {
-                var targetIp by remember { mutableStateOf("192.168.31.62:4500") } // 改成你的 IP
+                var targetIp by remember { mutableStateOf("192.168.31.62:$defaultPort") } // 改成你的 IP
                 var content by remember { mutableStateOf("") }
                 var logMessage by remember { mutableStateOf("等待输入...") }
                 var autoClearEnabled by remember { mutableStateOf(true) } // 4.2 自动清除开关
@@ -34,7 +37,10 @@ class MainActivity : ComponentActivity() {
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Column(modifier = Modifier.padding(innerPadding).padding(20.dp).fillMaxSize()) {
-                        Text(text = "VoiceSync 自动同步端", style = MaterialTheme.typography.headlineMedium)
+                        Text(
+                            text = if (BuildConfig.DEBUG) "VoiceSync (Dev)" else "VoiceSync",
+                            style = MaterialTheme.typography.headlineMedium
+                        )
                         
                         Spacer(modifier = Modifier.height(16.dp))
 

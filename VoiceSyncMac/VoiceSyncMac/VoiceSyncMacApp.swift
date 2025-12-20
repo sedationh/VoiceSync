@@ -9,6 +9,19 @@ import SwiftUI
 import Swifter
 import Combine
 
+// 环境配置
+struct AppConfig {
+    #if DEBUG
+    static let isDebug = true
+    static let port: UInt16 = 4501
+    static let appName = "VoiceSync (Dev)"
+    #else
+    static let isDebug = false
+    static let port: UInt16 = 4500
+    static let appName = "VoiceSync"
+    #endif
+}
+
 // App 级别的服务管理器
 class AppState: ObservableObject {
     static let shared = AppState()
@@ -23,7 +36,7 @@ class AppState: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     var fullAddress: String {
-        "\(localIP):4500"
+        "\(localIP):\(AppConfig.port)"
     }
     
     private init() {
@@ -56,11 +69,12 @@ class AppState: ObservableObject {
         }
 
         do {
-            try server.start(4500)
+            try server.start(AppConfig.port)
             isRunning = true
+            print("[\(AppConfig.appName)] 服务启动在端口 \(AppConfig.port)")
         } catch {
             isRunning = false
-            print("启动失败: \(error)")
+            print("[\(AppConfig.appName)] 启动失败: \(error)")
         }
     }
     
@@ -80,7 +94,7 @@ struct VoiceSyncMacApp: App {
     
     var body: some Scene {
         // 主窗口 - 使用 Window 保证单窗口
-        Window("VoiceSync", id: "main") {
+        Window(AppConfig.appName, id: "main") {
             ContentView()
                 .environmentObject(appState)
         }
@@ -95,7 +109,7 @@ struct VoiceSyncMacApp: App {
                 // 查找并显示主窗口
                 for window in NSApplication.shared.windows {
                     // 排除菜单栏弹出窗口和其他系统窗口
-                    if window.title == "VoiceSync" || window.identifier?.rawValue == "main" {
+                    if window.title == AppConfig.appName || window.identifier?.rawValue == "main" {
                         window.makeKeyAndOrderFront(nil)
                         window.orderFrontRegardless()
                         return

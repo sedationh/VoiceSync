@@ -1,3 +1,3 @@
 <resources>
-    <string name="app_name">VoiceSyncAndroid</string>
+    <!-- app_name 由 build.gradle 动态设置 -->
 </resources>
