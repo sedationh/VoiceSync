@@ -7,47 +7,89 @@
 
 import SwiftUI
 import Swifter
+import AppKit // 操作剪贴板必须引入
+
+// 2.2 数据模型：每一条同步记录
+struct SyncItem: Identifiable {
+    let id = UUID()
+    let content: String
+    let timestamp: Date = Date()
+}
+
+// 核心管理类
+class SyncManager: ObservableObject {
+    @Published var history: [SyncItem] = []
+    
+    // 2.1 & 2.3 核心方法：更新剪贴板并记录历史
+    func handleNewContent(_ text: String) {
+        // 必须在主线程操作 UI 和系统服务
+        DispatchQueue.main.async {
+            // 1. 写入系统剪贴板
+            let pasteboard = NSPasteboard.general
+            pasteboard.declareTypes([.string], owner: nil)
+            pasteboard.setString(text, forType: .string)
+            
+            // 2. 存入历史列表（插到最前面）
+            let newItem = SyncItem(content: text)
+            self.history.insert(newItem, at: 0)
+            
+            // 限制历史记录数量，防止内存占用过大（可选）
+            if self.history.count > 50 {
+                self.history.removeLast()
+            }
+        }
+    }
+}
 
 struct ContentView: View {
-    // 创建服务器实例
     private let server = HttpServer()
+    @StateObject private var syncManager = SyncManager() // 观察管理类
     @State private var statusText = "服务待启动..."
-    @State private var lastMessage = "暂无消息"
 
     var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "antenna.radiowaves.left.and.right")
-                .font(.system(size: 50))
-                .foregroundColor(.blue)
-            
-            Text("VoiceSync 控制台")
-                .font(.title2)
-            
-            Divider()
-            
-            VStack(alignment: .leading, spacing: 10) {
-                Text("状态：\(statusText)")
-                    .fontWeight(.bold)
-                
-                Text("最后收到的内容：")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                Text(lastMessage)
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(8)
+        VStack(spacing: 0) {
+            // 顶部状态栏
+            HStack {
+                Circle()
+                    .fill(statusText.contains("运行中") ? Color.green : Color.red)
+                    .frame(width: 8, height: 8)
+                Text(statusText)
+                    .font(.subheadline)
+                Spacer()
+                Text("端口: 4500").font(.caption).foregroundColor(.secondary)
             }
+            .padding()
+            .background(Color.gray.opacity(0.05))
+
+            // 2.4 历史记录列表
+            List(syncManager.history) { item in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(item.content)
+                        .lineLimit(2)
+                        .font(.body)
+                    Text(item.timestamp, style: .time)
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                }
+                .padding(.vertical, 4)
+                .contextMenu {
+                    Button("重新复制") {
+                        syncManager.handleNewContent(item.content)
+                    }
+                }
+            }
+            .listStyle(InsetListStyle())
             
-            Text("监听端口: 4500")
-                .font(.footnote)
-                .foregroundColor(.gray)
+            if syncManager.history.isEmpty {
+                VStack {
+                    Spacer()
+                    Text("等待 Android 端同步...").foregroundColor(.secondary)
+                    Spacer()
+                }
+            }
         }
-        .padding()
-        .frame(width: 350, height: 400)
+        .frame(width: 350, height: 500)
         .onAppear {
-            // 只有在非预览模式下才启动服务器
             if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == nil {
                 setupServer()
             }
@@ -55,25 +97,22 @@ struct ContentView: View {
     }
 
     func setupServer() {
-        // 定义接收数据的路径
+        // 2.3 完善路由逻辑
         server["/sync"] = { request in
-            // 解析 Body 数据
-            let body = String(bytes: request.body, encoding: .utf8) ?? "解析失败"
-            print("收到请求: \(body)")
+            let body = String(bytes: request.body, encoding: .utf8) ?? ""
             
-            // 必须在主线程更新 UI
-            DispatchQueue.main.async {
-                self.lastMessage = body
-                self.statusText = "已接收数据 ✅"
+            if !body.isEmpty {
+                print("收到内容并注入剪贴板: \(body)")
+                // 调用管理类处理内容
+                syncManager.handleNewContent(body)
+                return .ok(.text("Success"))
             }
-            
-            return .ok(.text("Mac 已收到！"))
+            return .badRequest(nil)
         }
 
         do {
-            // 启动服务器
             try server.start(4500)
-            statusText = "服务运行中 (Port 4500)..."
+            statusText = "服务运行中 (Port 4500)"
         } catch {
             statusText = "启动失败: \(error)"
         }
