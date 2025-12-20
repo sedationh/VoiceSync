@@ -63,4 +63,4 @@
 ## 🚀 进阶与优化 (P2 - 计划外)
 
 * [ ] [Mac/Android] 集成 mDNS (Bonjour) 实现自动发现设备。
-* [ ] [Mac] 实现 MenuBar 模式，隐藏主窗口运行。
+* [x] [Mac] 实现 MenuBar 模式，隐藏主窗口运行。

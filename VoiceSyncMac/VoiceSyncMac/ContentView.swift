@@ -90,28 +90,16 @@ class SyncManager: ObservableObject {
 }
 
 struct ContentView: View {
-    private let server = HttpServer()
-    @StateObject private var syncManager = SyncManager()
-    @State private var statusText = "服务待启动..."
+    @EnvironmentObject var appState: AppState
     @State private var showClearConfirm = false
     @State private var searchText = ""
-    @State private var localIP: String = "获取中..."
     @State private var showCopiedTip = false
 
     var filteredHistory: [SyncItem] {
         if searchText.isEmpty {
-            return syncManager.history
+            return appState.syncManager.history
         }
-        return syncManager.history.filter { $0.content.localizedCaseInsensitiveContains(searchText) }
-    }
-    
-    var isRunning: Bool {
-        statusText.contains("运行中")
-    }
-    
-    // 完整的连接地址
-    var fullAddress: String {
-        "\(localIP):4500"
+        return appState.syncManager.history.filter { $0.content.localizedCaseInsensitiveContains(searchText) }
     }
 
     var body: some View {
@@ -119,16 +107,16 @@ struct ContentView: View {
             // 顶部状态栏 - 简洁设计
             HStack(spacing: 8) {
                 Circle()
-                    .fill(isRunning ? Color.green : Color.red)
+                    .fill(appState.isRunning ? Color.green : Color.red)
                     .frame(width: 8, height: 8)
-                Text(isRunning ? "运行中" : "已停止")
+                Text(appState.isRunning ? "运行中" : "已停止")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(isRunning ? .green : .red)
+                    .foregroundColor(appState.isRunning ? .green : .red)
                 
                 Spacer()
                 
-                if !syncManager.history.isEmpty {
-                    Text("\(syncManager.history.count)")
+                if !appState.syncManager.history.isEmpty {
+                    Text("\(appState.syncManager.history.count)")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 6)
@@ -143,7 +131,7 @@ struct ContentView: View {
             
             // IP 地址栏 - 点击复制
             Button(action: {
-                syncManager.copyToClipboard(fullAddress)
+                appState.syncManager.copyToClipboard(appState.fullAddress)
                 showCopiedTip = true
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                     showCopiedTip = false
@@ -154,7 +142,7 @@ struct ContentView: View {
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
                     
-                    Text(fullAddress)
+                    Text(appState.fullAddress)
                         .font(.system(size: 12, design: .monospaced))
                         .foregroundColor(.primary)
                     
@@ -181,7 +169,7 @@ struct ContentView: View {
             Divider()
             
             // 主内容区
-            if syncManager.history.isEmpty {
+            if appState.syncManager.history.isEmpty {
                 // 空状态
                 emptyStateView
             } else {
@@ -196,10 +184,10 @@ struct ContentView: View {
                     LazyVStack(spacing: 8) {
                         ForEach(filteredHistory) { item in
                             SyncItemCard(item: item, onCopy: {
-                                syncManager.copyToClipboard(item.content)
+                                appState.syncManager.copyToClipboard(item.content)
                             }, onDelete: {
                                 withAnimation(.easeOut(duration: 0.2)) {
-                                    syncManager.deleteItem(item)
+                                    appState.syncManager.deleteItem(item)
                                 }
                             })
                         }
@@ -226,18 +214,10 @@ struct ContentView: View {
         .alert("确认清空", isPresented: $showClearConfirm) {
             Button("取消", role: .cancel) { }
             Button("清空", role: .destructive) {
-                withAnimation { syncManager.clearHistory() }
+                withAnimation { appState.syncManager.clearHistory() }
             }
         } message: {
             Text("确定要清空所有历史记录吗？")
-        }
-        .onAppear {
-            // 获取本机 IP
-            localIP = getLocalIPAddress() ?? "未知"
-            
-            if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == nil {
-                setupServer()
-            }
         }
     }
     
@@ -296,7 +276,7 @@ struct ContentView: View {
     // 底部栏
     private var bottomBar: some View {
         HStack {
-            if let lastTime = syncManager.lastSyncTime {
+            if let lastTime = appState.syncManager.lastSyncTime {
                 Image(systemName: "clock")
                     .font(.system(size: 10))
                     .foregroundColor(.secondary)
@@ -318,26 +298,6 @@ struct ContentView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(Color(NSColor.windowBackgroundColor))
-    }
-
-    func setupServer() {
-        server["/sync"] = { request in
-            let body = String(bytes: request.body, encoding: .utf8) ?? ""
-            
-            if !body.isEmpty {
-                print("收到内容并注入剪贴板: \(body)")
-                syncManager.handleNewContent(body)
-                return .ok(.text("Success"))
-            }
-            return .badRequest(nil)
-        }
-
-        do {
-            try server.start(4500)
-            statusText = "服务运行中"
-        } catch {
-            statusText = "启动失败: \(error)"
-        }
     }
 }
 
