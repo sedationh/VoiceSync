@@ -5,8 +5,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.sedationh.voicesync.ui.theme.VoiceSyncAndroidTheme
@@ -14,6 +17,16 @@ import kotlinx.coroutines.*
 import okhttp3.*
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.*
+
+// 数据类：记录同步历史
+data class SyncRecord(
+    val timestamp: String,
+    val content: String,
+    val success: Boolean,
+    val message: String
+)
 
 class MainActivity : ComponentActivity() {
     private val client = OkHttpClient()
@@ -33,27 +46,22 @@ class MainActivity : ComponentActivity() {
                 var content by remember { mutableStateOf("") }
                 var logMessage by remember { mutableStateOf("等待输入...") }
                 var autoClearEnabled by remember { mutableStateOf(true) } // 4.2 自动清除开关
+                var syncRecords by remember { mutableStateOf(listOf<SyncRecord>()) } // 同步记录
                 val scope = rememberCoroutineScope()
+                
+                val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Column(modifier = Modifier.padding(innerPadding).padding(20.dp).fillMaxSize()) {
+                    Column(modifier = Modifier.padding(innerPadding).padding(16.dp).fillMaxSize()) {
+                        // 标题
                         Text(
                             text = if (BuildConfig.DEBUG) "VoiceSync (Dev)" else "VoiceSync",
                             style = MaterialTheme.typography.headlineMedium
                         )
                         
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                        TextField(
-                            value = targetIp,
-                            onValueChange = { targetIp = it },
-                            label = { Text("Mac IP 地址") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // 核心：这里的 onValueChange 包含了自动发送逻辑
+                        // ========== 1. 语音输入区（最上面）==========
                         TextField(
                             value = content,
                             onValueChange = { newText ->
@@ -70,6 +78,15 @@ class MainActivity : ComponentActivity() {
                                     if (content.isNotEmpty()) {
                                         logMessage = "检测到停顿，自动同步中..."
                                         sendToMac(targetIp, content) { success, msg ->
+                                            val time = dateFormat.format(Date())
+                                            val record = SyncRecord(
+                                                timestamp = time,
+                                                content = content,
+                                                success = success,
+                                                message = msg
+                                            )
+                                            syncRecords = listOf(record) + syncRecords // 新记录在最前
+                                            
                                             if (success) {
                                                 logMessage = "自动同步成功 ✅" + if (autoClearEnabled) "，3秒后自动清空" else ""
                                                 
@@ -90,38 +107,150 @@ class MainActivity : ComponentActivity() {
                             },
                             label = { Text("语音输入区 (停顿2秒自动同步)") },
                             modifier = Modifier.fillMaxWidth(),
-                            minLines = 8
+                            minLines = 6
                         )
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        // 状态信息
+                        Text(
+                            text = logMessage, 
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
 
-                        // 4.2 自动清除开关
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // ========== 2. 操作按钮区（中间，方便点击）==========
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                // 自动清空开关
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("自动清空", style = MaterialTheme.typography.bodyLarge)
+                                    Switch(
+                                        checked = autoClearEnabled,
+                                        onCheckedChange = { autoClearEnabled = it }
+                                    )
+                                }
+                                
+                                Spacer(modifier = Modifier.height(8.dp))
+                                
+                                // 手动清空按钮
+                                Button(
+                                    onClick = { 
+                                        content = ""
+                                        logMessage = "手动已清空"
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("手动清空")
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // ========== 3. IP地址设置（下面）==========
+                        TextField(
+                            value = targetIp,
+                            onValueChange = { targetIp = it },
+                            label = { Text("Mac IP 地址") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // ========== 4. 同步记录列表（最下面）==========
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("同步后自动清空", style = MaterialTheme.typography.bodyMedium)
-                            Switch(
-                                checked = autoClearEnabled,
-                                onCheckedChange = { autoClearEnabled = it }
+                            Text(
+                                text = "同步记录 (${syncRecords.size})",
+                                style = MaterialTheme.typography.titleMedium
                             )
+                            
+                            // 清空记录按钮
+                            OutlinedButton(
+                                onClick = { 
+                                    syncRecords = emptyList()
+                                    logMessage = "记录已清空"
+                                }
+                            ) {
+                                Text("清空记录")
+                            }
                         }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // 手动清除按钮
-                        Button(
-                            onClick = { content = ""; logMessage = "手动已清空" },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                            modifier = Modifier.fillMaxWidth()
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        // 使用 LazyColumn 显示记录列表
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text("手动强制清空")
+                            items(syncRecords) { record ->
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (record.success) 
+                                            MaterialTheme.colorScheme.primaryContainer
+                                        else 
+                                            MaterialTheme.colorScheme.errorContainer
+                                    )
+                                ) {
+                                    Column(modifier = Modifier.padding(12.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(
+                                                text = record.timestamp,
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = if (record.success)
+                                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                                else
+                                                    MaterialTheme.colorScheme.onErrorContainer
+                                            )
+                                            Text(
+                                                text = if (record.success) "✅ 成功" else "❌ 失败",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = if (record.success)
+                                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                                else
+                                                    MaterialTheme.colorScheme.onErrorContainer
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = record.content,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = if (record.success)
+                                                MaterialTheme.colorScheme.onPrimaryContainer
+                                            else
+                                                MaterialTheme.colorScheme.onErrorContainer
+                                        )
+                                        if (!record.success) {
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = "错误: ${record.message}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onErrorContainer
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
-
-                        Spacer(modifier = Modifier.height(20.dp))
-
-                        Text(text = logMessage, style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }
