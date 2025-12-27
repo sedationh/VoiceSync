@@ -50,10 +50,11 @@ class SyncManager: ObservableObject {
     @Published var history: [SyncItem] = []
     @Published var lastSyncTime: Date? = nil
     @Published var autoPasteEnabled: Bool = true // 自动粘贴开关
-    @Published var autoSendEnabled: Bool = false // 自动发送开关
+    @Published var autoSendEnabled: Bool = true // 自动发送开关
+    @Published var autoEnterEnabled: Bool = true // 响应远程回车开关
     
     // 2.1 & 2.3 核心方法：更新剪贴板并记录历史
-    func handleNewContent(_ text: String) {
+    func handleNewContent(_ text: String, autoEnter: Bool = false) {
         // 必须在主线程操作 UI 和系统服务
         DispatchQueue.main.async {
             // 1. 写入系统剪贴板
@@ -73,13 +74,13 @@ class SyncManager: ObservableObject {
             
             // 3. 自动粘贴（如果启用）
             if self.autoPasteEnabled {
-                self.simulatePaste()
+                self.simulatePaste(withEnter: autoEnter)
             }
         }
     }
     
     // 模拟 Cmd+V 粘贴操作
-    private func simulatePaste() {
+    private func simulatePaste(withEnter: Bool = false) {
         // 稍微延迟以确保剪贴板已更新
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
             // 首先检查辅助功能权限
@@ -122,8 +123,8 @@ class SyncManager: ObservableObject {
             
             print("✅ 已发送 Cmd+V 粘贴事件")
 
-            // 4. 自动发送（如果启用）
-            if self.autoSendEnabled {
+            // 4. 远程回车控制（如果启用且 withEnter 为 true）
+            if withEnter && self.autoEnterEnabled {
                 // 稍微增加延迟，确保粘贴操作已完成且修饰键已完全释放
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                     guard let enterDown = CGEvent(keyboardEventSource: source, virtualKey: 36, keyDown: true),
@@ -138,7 +139,7 @@ class SyncManager: ObservableObject {
                     
                     enterDown.post(tap: .cghidEventTap)
                     enterUp.post(tap: .cghidEventTap)
-                    print("✅ 已发送 Enter 发送事件")
+                    print("✅ 已发送 Enter 发送事件（远程控制）")
                 }
             }
         }
@@ -258,12 +259,19 @@ struct ContentView: View {
                     .padding(.bottom, 4)
                 
                 // 快捷设置
-                HStack(spacing: 16) {
-                    Toggle("自动粘贴", isOn: $appState.syncManager.autoPasteEnabled)
-                        .controlSize(.small)
-                    Toggle("自动发送", isOn: $appState.syncManager.autoSendEnabled)
-                        .controlSize(.small)
-                    Spacer()
+                VStack(spacing: 6) {
+                    HStack(spacing: 16) {
+                        Toggle("自动粘贴", isOn: $appState.syncManager.autoPasteEnabled)
+                            .controlSize(.small)
+                        Toggle("自动发送", isOn: $appState.syncManager.autoSendEnabled)
+                            .controlSize(.small)
+                        Spacer()
+                    }
+                    HStack(spacing: 16) {
+                        Toggle("响应远程回车", isOn: $appState.syncManager.autoEnterEnabled)
+                            .controlSize(.small)
+                        Spacer()
+                    }
                 }
                 .padding(.horizontal, 14)
                 .padding(.bottom, 4)

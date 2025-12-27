@@ -58,10 +58,25 @@ class AppState: ObservableObject {
             let body = String(bytes: request.body, encoding: .utf8) ?? ""
             
             if !body.isEmpty {
-                print("收到内容并注入剪贴板: \(body)")
-                DispatchQueue.main.async {
-                    self?.syncManager.handleNewContent(body)
-                    self?.markNewMessage()
+                // 尝试解析 JSON
+                if let data = body.data(using: .utf8),
+                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    // JSON 格式
+                    let content = json["content"] as? String ?? ""
+                    let autoEnter = json["autoEnter"] as? Bool ?? false
+                    
+                    print("收到 JSON 内容并注入剪贴板: \(content), autoEnter: \(autoEnter)")
+                    DispatchQueue.main.async {
+                        self?.syncManager.handleNewContent(content, autoEnter: autoEnter)
+                        self?.markNewMessage()
+                    }
+                } else {
+                    // 纯文本格式（向下兼容）
+                    print("收到纯文本内容并注入剪贴板: \(body)")
+                    DispatchQueue.main.async {
+                        self?.syncManager.handleNewContent(body, autoEnter: false)
+                        self?.markNewMessage()
+                    }
                 }
                 return .ok(.text("Success"))
             }
@@ -169,6 +184,11 @@ struct MenuBarView: View {
             
             Divider().opacity(0.5)
             
+            // 响应远程回车开关
+            autoEnterSection
+            
+            Divider().opacity(0.5)
+            
             // IP 地址区
             addressSection
             
@@ -233,6 +253,33 @@ struct MenuBarView: View {
             Spacer()
             
             Toggle("", isOn: $appState.syncManager.autoSendEnabled)
+                .toggleStyle(.switch)
+                .controlSize(.small)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+    }
+    
+    // MARK: - 响应远程回车开关
+    private var autoEnterSection: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "return")
+                .font(.system(size: 14))
+                .foregroundStyle(.secondary)
+                .frame(width: 24)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text("响应远程回车")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.primary)
+                Text("执行手机端发来的回车指令")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+            }
+            
+            Spacer()
+            
+            Toggle("", isOn: $appState.syncManager.autoEnterEnabled)
                 .toggleStyle(.switch)
                 .controlSize(.small)
         }
