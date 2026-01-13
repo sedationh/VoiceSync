@@ -102,16 +102,16 @@ class MainActivity : ComponentActivity() {
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         item {
-                            Spacer(modifier = Modifier.height(20.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
                             // 标题和构建时间
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.Bottom
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
                                     text = if (BuildConfig.DEBUG) "VoiceSync (Dev)" else "VoiceSync",
-                                    style = MaterialTheme.typography.headlineLarge,
+                                    style = MaterialTheme.typography.titleLarge,
                                     color = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
@@ -121,12 +121,121 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
 
-                            // ========== 1. 语音输入区（最上面）==========
-                            // 1. 计算自适应高度（屏幕高度的 30%）
+                            // ========== 1. 发送按钮区（最上面，方便点击）==========
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                // 清空按钮（左边）
+                                OutlinedButton(
+                                    onClick = { 
+                                        content = ""
+                                        logMessage = "已清空"
+                                    },
+                                    modifier = Modifier.weight(0.5f),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                                ) {
+                                    Text("清空", style = MaterialTheme.typography.bodyMedium)
+                                }
+                                
+                                // 右边：发送按钮组（上下排列）
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    // 发送按钮（上面，使用频率较低）
+                                    OutlinedButton(
+                                        onClick = {
+                                            if (content.isNotEmpty()) {
+                                                logMessage = "发送中..."
+                                                sendToMac(targetIp, content, false) { success, msg ->
+                                                    val time = dateFormat.format(Date())
+                                                    val record = SyncRecord(
+                                                        timestamp = time,
+                                                        content = content,
+                                                        success = success,
+                                                        message = msg
+                                                    )
+                                                    syncRecords = listOf(record) + syncRecords
+                                                    
+                                                    if (success) {
+                                                        logMessage = "发送成功 ✅"
+                                                        ipHistoryManager.addOrUpdateIp(targetIp)
+                                                        if (autoClearEnabled) {
+                                                            content = ""
+                                                            logMessage = "发送成功 ✅ 已清空"
+                                                        }
+                                                    } else {
+                                                        logMessage = "发送失败: $msg"
+                                                    }
+                                                }
+                                            } else {
+                                                logMessage = "内容为空"
+                                            }
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        enabled = content.isNotEmpty(),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        Text("发送", style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                    
+                                    // 发送+回车按钮（下面，使用频率更高，更容易按到）
+                                    Button(
+                                        onClick = {
+                                            if (content.isNotEmpty()) {
+                                                logMessage = "发送中..."
+                                                sendToMac(targetIp, content, true) { success, msg ->
+                                                    val time = dateFormat.format(Date())
+                                                    val record = SyncRecord(
+                                                        timestamp = time,
+                                                        content = content,
+                                                        success = success,
+                                                        message = msg
+                                                    )
+                                                    syncRecords = listOf(record) + syncRecords
+                                                    
+                                                    if (success) {
+                                                        logMessage = "发送成功 ✅ (含回车)"
+                                                        ipHistoryManager.addOrUpdateIp(targetIp)
+                                                        if (autoClearEnabled) {
+                                                            content = ""
+                                                            logMessage = "发送成功 ✅ (含回车) 已清空"
+                                                        }
+                                                    } else {
+                                                        logMessage = "发送失败: $msg"
+                                                    }
+                                                }
+                                            } else {
+                                                logMessage = "内容为空"
+                                            }
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        enabled = content.isNotEmpty(),
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp)
+                                    ) {
+                                        Text("发送 + 回车", style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(4.dp))
+                            
+                            // 状态信息
+                            Text(
+                                text = logMessage, 
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // ========== 2. 语音输入区 ==========
                             val configuration = androidx.compose.ui.platform.LocalConfiguration.current
-                            val maxHeightDp = (configuration.screenHeightDp * 0.3f).dp
+                            val maxHeightDp = (configuration.screenHeightDp * 0.35f).dp
                             
                             TextField(
                                 value = content,
@@ -164,7 +273,7 @@ class MainActivity : ComponentActivity() {
                                                         // 保存成功的 IP 到历史
                                                         ipHistoryManager.addOrUpdateIp(targetIp)
                                                         
-                                                        // --- 4.1 自动清除逻辑（受开关控制）---
+                                                        // --- 自动清除逻辑（受开关控制）---
                                                         if (autoClearEnabled) {
                                                             clearJob = scope.launch {
                                                                 delay(3000) // 等待 3 秒
@@ -185,28 +294,19 @@ class MainActivity : ComponentActivity() {
                                         if (autoSendEnabled) 
                                             "语音输入区 (停顿${String.format("%.1f", currentDelay / 1000.0)}秒自动同步)" 
                                         else 
-                                            "语音输入区 (自动同步已关闭)"
+                                            "语音输入区 (手动发送模式)"
                                     )
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .heightIn(max = maxHeightDp), // 设置最大高度为屏幕高度的 30%
-                                minLines = 6,
-                                maxLines = Int.MAX_VALUE // 允许无限行数扩展
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-                            
-                            // 状态信息
-                            Text(
-                                text = logMessage, 
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    .heightIn(max = maxHeightDp),
+                                minLines = 5,
+                                maxLines = Int.MAX_VALUE
                             )
                         }
 
                         item {
-                            // ========== 2. 操作按钮区（中间，方便点击）==========
+                            // ========== 3. 设置选项区（下面）==========
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -218,12 +318,18 @@ class MainActivity : ComponentActivity() {
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text("自动发送", style = MaterialTheme.typography.bodyLarge)
+                                        Column {
+                                            Text("自动发送", style = MaterialTheme.typography.bodyMedium)
+                                            Text(
+                                                text = "停顿后自动发送内容",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                            )
+                                        }
                                         Switch(
                                             checked = autoSendEnabled,
                                             onCheckedChange = { 
                                                 autoSendEnabled = it
-                                                // 如果关闭自动发送，也取消当前的发送任务
                                                 if (!it) {
                                                     debounceJob?.cancel()
                                                     clearJob?.cancel()
@@ -232,104 +338,50 @@ class MainActivity : ComponentActivity() {
                                         )
                                     }
                                     
-                                    Spacer(modifier = Modifier.height(8.dp))
+                                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                                     
-                                    // 自动清空开关 (只有开启自动发送时才能启用)
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = "自动清空", 
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            color = if (autoSendEnabled) 
-                                                MaterialTheme.colorScheme.onSurfaceVariant 
-                                            else 
-                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                                        )
-                                        Switch(
-                                            checked = autoClearEnabled,
-                                            onCheckedChange = { autoClearEnabled = it },
-                                            enabled = autoSendEnabled // 只有自动发送开启时才能操作
-                                        )
-                                    }
-                                    
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    
-                                    // 远程回车开关
+                                    // 自动清空开关 (始终可用，不再依赖自动发送)
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Column {
+                                            Text("发送后清空", style = MaterialTheme.typography.bodyMedium)
                                             Text(
-                                                text = "发送回车",
-                                                style = MaterialTheme.typography.bodyLarge
-                                            )
-                                            Text(
-                                                text = "同步后在 Mac 上模拟按回车",
+                                                text = "发送成功后自动清空输入框",
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                                             )
                                         }
                                         Switch(
-                                            checked = autoEnterEnabled,
-                                            onCheckedChange = { autoEnterEnabled = it }
+                                            checked = autoClearEnabled,
+                                            onCheckedChange = { autoClearEnabled = it }
                                         )
                                     }
                                     
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    
-                                    // 手动发送按钮（只在关闭自动发送时显示）
-                                    if (!autoSendEnabled) {
-                                        Button(
-                                            onClick = {
-                                                if (content.isNotEmpty()) {
-                                                    logMessage = "手动同步中..."
-                                                    sendToMac(targetIp, content, autoEnterEnabled) { success, msg ->
-                                                        val time = dateFormat.format(Date())
-                                                        val record = SyncRecord(
-                                                            timestamp = time,
-                                                            content = content,
-                                                            success = success,
-                                                            message = msg
-                                                        )
-                                                        syncRecords = listOf(record) + syncRecords
-                                                        
-                                                        if (success) {
-                                                            logMessage = "手动同步成功 ✅"
-                                                            // 保存成功的 IP 到历史
-                                                            ipHistoryManager.addOrUpdateIp(targetIp)
-                                                        } else {
-                                                            logMessage = "同步失败: $msg"
-                                                        }
-                                                    }
-                                                } else {
-                                                    logMessage = "内容为空，无法发送"
-                                                }
-                                            },
-                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                                            modifier = Modifier.fillMaxWidth(),
-                                            enabled = content.isNotEmpty()
-                                        ) {
-                                            Text("立即发送")
-                                        }
+                                    // 自动发送时的回车选项（只在自动发送开启时显示）
+                                    if (autoSendEnabled) {
+                                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                                         
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                    }
-                                    
-                                    // 手动清空按钮
-                                    Button(
-                                        onClick = { 
-                                            content = ""
-                                            logMessage = "手动已清空"
-                                        },
-                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text("手动清空")
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column {
+                                                Text("自动发送含回车", style = MaterialTheme.typography.bodyMedium)
+                                                Text(
+                                                    text = "自动发送时同时发送回车键",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                                )
+                                            }
+                                            Switch(
+                                                checked = autoEnterEnabled,
+                                                onCheckedChange = { autoEnterEnabled = it }
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -494,7 +546,13 @@ class MainActivity : ComponentActivity() {
                         
                         items(syncRecords) { record ->
                             Card(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        // 点击记录恢复内容到输入框
+                                        content = record.content
+                                        logMessage = "已恢复内容"
+                                    },
                                 colors = CardDefaults.cardColors(
                                     containerColor = if (record.success) 
                                         MaterialTheme.colorScheme.primaryContainer
