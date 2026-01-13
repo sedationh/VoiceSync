@@ -8,6 +8,7 @@
 import SwiftUI
 import Swifter
 import Combine
+import ServiceManagement
 
 // 环境配置
 struct AppConfig {
@@ -20,6 +21,45 @@ struct AppConfig {
     static let port: UInt16 = 4500
     static let appName = "VoiceSync"
     #endif
+}
+
+// 开机自动启动管理器
+class LaunchAtLoginManager: ObservableObject {
+    static let shared = LaunchAtLoginManager()
+    
+    @Published var isEnabled: Bool = false
+    
+    private init() {
+        // 检查当前状态
+        updateStatus()
+    }
+    
+    func updateStatus() {
+        if #available(macOS 13.0, *) {
+            isEnabled = SMAppService.mainApp.status == .enabled
+        } else {
+            isEnabled = false
+        }
+    }
+    
+    func toggle() {
+        if #available(macOS 13.0, *) {
+            do {
+                if isEnabled {
+                    try SMAppService.mainApp.unregister()
+                    print("✅ 已取消开机自动启动")
+                } else {
+                    try SMAppService.mainApp.register()
+                    print("✅ 已设置开机自动启动")
+                }
+                updateStatus()
+            } catch {
+                print("❌ 设置开机启动失败: \(error)")
+            }
+        } else {
+            print("⚠️ 开机自动启动需要 macOS 13.0 或更高版本")
+        }
+    }
 }
 
 // App 级别的服务管理器
@@ -103,9 +143,27 @@ class AppState: ObservableObject {
     }
 }
 
+// AppDelegate 用于控制启动行为
+class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // 启动时隐藏主窗口，只显示菜单栏图标（静默启动）
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            for window in NSApplication.shared.windows {
+                // 只隐藏主窗口，保留菜单栏弹出窗口
+                if window.title == AppConfig.appName || 
+                   (window.identifier?.rawValue == "main") ||
+                   (!window.className.contains("MenuBarExtra") && window.level == .normal && window.contentView != nil) {
+                    window.close()
+                }
+            }
+        }
+    }
+}
+
 @main
 struct VoiceSyncMacApp: App {
     @StateObject private var appState = AppState.shared
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     var body: some Scene {
         // 主窗口 - 使用 Window 保证单窗口
@@ -163,6 +221,7 @@ struct VoiceSyncMacApp: App {
 // MenuBar 弹出视图 - 重新设计
 struct MenuBarView: View {
     @EnvironmentObject var appState: AppState
+    @StateObject private var launchAtLogin = LaunchAtLoginManager.shared
     @State private var showCopiedTip = false
     @State private var showContentCopiedTip = false
     let openMainWindow: () -> Void
@@ -186,6 +245,11 @@ struct MenuBarView: View {
             
             // 响应远程回车开关
             autoEnterSection
+            
+            Divider().opacity(0.5)
+            
+            // 开机自动启动开关
+            launchAtLoginSection
             
             Divider().opacity(0.5)
             
@@ -282,6 +346,36 @@ struct MenuBarView: View {
             Toggle("", isOn: $appState.syncManager.autoEnterEnabled)
                 .toggleStyle(.switch)
                 .controlSize(.small)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+    }
+    
+    // MARK: - 开机自动启动开关
+    private var launchAtLoginSection: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "power")
+                .font(.system(size: 14))
+                .foregroundStyle(.secondary)
+                .frame(width: 24)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text("开机自动启动")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.primary)
+                Text("登录时自动运行 VoiceSync")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+            }
+            
+            Spacer()
+            
+            Toggle("", isOn: Binding(
+                get: { launchAtLogin.isEnabled },
+                set: { _ in launchAtLogin.toggle() }
+            ))
+            .toggleStyle(.switch)
+            .controlSize(.small)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
