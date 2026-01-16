@@ -8,7 +8,29 @@
 
 ---
 
-## 💡 创作背景
+## � 应用截图
+
+### Mac 端界面
+
+Mac 端提供简洁直观的界面，实时显示同步状态和历史记录。支持菜单栏常驻模式，不干扰日常工作。
+
+<div align="center">
+  <img src="docs/images/mac-desktop.png" alt="VoiceSync Mac 端界面" width="800"/>
+  <p><i>Mac 端主界面：实时显示设备信息、同步历史和配置选项</i></p>
+</div>
+
+### Android 端界面
+
+Android 端采用全屏输入设计，启动即可唤起豆包输入法进行语音输入，操作流畅便捷。
+
+<div align="center">
+  <img src="docs/images/android-mobile.jpg" alt="VoiceSync Android 端界面" width="400"/>
+  <p><i>Android 端界面：全屏输入区域，支持语音识别与文字同步</i></p>
+</div>
+
+---
+
+## �💡 创作背景
 
 有一个叫**豆包输入法**的神器，它的语音识别模型非常强大，识别准确率和速度都远超其他输入法。但问题来了：
 
