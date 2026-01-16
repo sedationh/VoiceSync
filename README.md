@@ -24,7 +24,7 @@ Mac 端提供简洁直观的界面，实时显示同步状态和历史记录。�
 Android 端采用全屏输入设计，启动即可唤起豆包输入法进行语音输入，操作流畅便捷。
 
 <div align="center">
-  <img src="docs/images/android-mobile.jpg" alt="VoiceSync Android 端界面" width="400"/>
+  <img src="docs/images/android-mobile.jpg" alt="VoiceSync Android 端界面" width="250"/>
   <p><i>Android 端界面：全屏输入区域，支持语音识别与文字同步</i></p>
 </div>
 
