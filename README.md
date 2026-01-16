@@ -15,7 +15,7 @@
 Mac 端提供简洁直观的界面，实时显示同步状态和历史记录。支持菜单栏常驻模式，不干扰日常工作。
 
 <div align="center">
-  <img src="docs/images/mac-desktop.png" alt="VoiceSync Mac 端界面" width="800"/>
+  <img src="docs/images/mac-desktop.png" alt="VoiceSync Mac 端界面" width="300"/>
   <p><i>Mac 端主界面：实时显示设备信息、同步历史和配置选项</i></p>
 </div>
 
