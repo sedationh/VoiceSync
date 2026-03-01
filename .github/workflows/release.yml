@@ -70,6 +70,21 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
       
+      - name: Create export_options.plist
+        working-directory: VoiceSyncMac
+        run: |
+          mkdir -p build
+          cat > build/export_options.plist <<'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>mac-application</string>
+          </dict>
+          </plist>
+          EOF
+      
       - name: Export Mac app
         working-directory: VoiceSyncMac
         run: |
