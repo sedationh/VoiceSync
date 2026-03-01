@@ -79,6 +79,41 @@ class SyncManager: ObservableObject {
         }
     }
     
+    // 处理图片数据
+    func handleNewImage(_ base64String: String, mimeType: String) {
+        DispatchQueue.main.async {
+            // 1. Base64解码
+            guard let imageData = Data(base64Encoded: base64String, options: .ignoreUnknownCharacters),
+                  let nsImage = NSImage(data: imageData) else {
+                print("❌ 图片解码失败")
+                return
+            }
+            
+            // 2. 写入系统剪贴板
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            pasteboard.writeObjects([nsImage])
+            
+            // 3. 存入历史列表（显示为"[图片]"）
+            let size = imageData.count / 1024  // KB
+            let newItem = SyncItem(content: "[图片 \(size)KB]")
+            self.history.insert(newItem, at: 0)
+            self.lastSyncTime = Date()
+            
+            // 限制历史记录数量
+            if self.history.count > 50 {
+                self.history.removeLast()
+            }
+            
+            // 4. 自动粘贴（如果启用）
+            if self.autoPasteEnabled {
+                self.simulatePaste(withEnter: false)
+            }
+            
+            print("✅ 图片已写入剪贴板，大小: \(size)KB")
+        }
+    }
+    
     // 模拟 Cmd+V 粘贴操作
     private func simulatePaste(withEnter: Bool = false) {
         // 稍微延迟以确保剪贴板已更新

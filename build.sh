@@ -73,16 +73,6 @@ build_mac() {
     # 创建输出目录
     mkdir -p "$OUTPUT_DIR"
     
-    # 生成构建时间文件
-    BUILD_TIME=$(date '+%Y-%m-%d %H:%M:%S')
-    cat > "$SCRIPT_DIR/VoiceSyncMac/VoiceSyncMac/BuildTime.swift" << EOF
-// 自动生成，请勿手动修改
-import Foundation
-
-let BUILD_TIME = "$BUILD_TIME"
-EOF
-    print_success "生成构建时间: $BUILD_TIME"
-    
     # Archive
     print_step "正在 Archive..."
     xcodebuild -scheme VoiceSyncMac \
@@ -142,10 +132,6 @@ build_android() {
     # 创建输出目录
     mkdir -p "$OUTPUT_DIR"
     
-    # 生成构建时间
-    BUILD_TIME=$(date '+%Y-%m-%d %H:%M:%S')
-    print_success "生成构建时间: $BUILD_TIME"
-    
     # 检查 gradlew 是否可执行
     if [ ! -x ./gradlew ]; then
         chmod +x ./gradlew
@@ -153,7 +139,7 @@ build_android() {
     
     # 构建 APK
     print_step "正在构建 APK..."
-    ./gradlew $GRADLE_TASK -PBUILD_TIME="$BUILD_TIME" --quiet
+    ./gradlew $GRADLE_TASK --quiet
     
     # 复制到输出目录
     if [ "$BUILD_TYPE" = "debug" ]; then

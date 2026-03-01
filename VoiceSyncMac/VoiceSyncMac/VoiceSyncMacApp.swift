@@ -101,14 +101,29 @@ class AppState: ObservableObject {
                 // 尝试解析 JSON
                 if let data = body.data(using: .utf8),
                    let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                    // JSON 格式
-                    let content = json["content"] as? String ?? ""
-                    let autoEnter = json["autoEnter"] as? Bool ?? false
+                    // 检查类型字段
+                    let type = json["type"] as? String ?? "text"
                     
-                    print("收到 JSON 内容并注入剪贴板: \(content), autoEnter: \(autoEnter)")
-                    DispatchQueue.main.async {
-                        self?.syncManager.handleNewContent(content, autoEnter: autoEnter)
-                        self?.markNewMessage()
+                    if type == "image" {
+                        // 图片类型
+                        let base64Content = json["content"] as? String ?? ""
+                        let mimeType = json["mimeType"] as? String ?? "image/png"
+                        
+                        print("收到图片数据，MIME: \(mimeType), 大小: \(base64Content.count) 字符")
+                        DispatchQueue.main.async {
+                            self?.syncManager.handleNewImage(base64Content, mimeType: mimeType)
+                            self?.markNewMessage()
+                        }
+                    } else {
+                        // 文本类型（默认）
+                        let content = json["content"] as? String ?? ""
+                        let autoEnter = json["autoEnter"] as? Bool ?? false
+                        
+                        print("收到文本内容并注入剪贴板: \(content), autoEnter: \(autoEnter)")
+                        DispatchQueue.main.async {
+                            self?.syncManager.handleNewContent(content, autoEnter: autoEnter)
+                            self?.markNewMessage()
+                        }
                     }
                 } else {
                     // 纯文本格式（向下兼容）

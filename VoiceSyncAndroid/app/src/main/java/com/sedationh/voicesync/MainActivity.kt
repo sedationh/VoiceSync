@@ -1,9 +1,13 @@
 package com.sedationh.voicesync
 
+import android.net.Uri
 import android.os.Bundle
+import android.util.Base64
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -31,7 +35,9 @@ data class SyncRecord(
     val timestamp: String,
     val content: String,
     val success: Boolean,
-    val message: String
+    val message: String,
+    val type: String = "text", // text 或 image
+    val mimeType: String? = null // 图片MIME类型
 )
 
 class MainActivity : ComponentActivity() {
@@ -58,6 +64,29 @@ class MainActivity : ComponentActivity() {
                 2000L + ((textLength - 25) * 2000L / 75).toLong()
             }
             else -> 4000L  // 4秒封顶
+        }
+    }
+    
+    /**
+     * 读取图片URI并转换为Base64编码字符串
+     * @param uri 图片URI
+     * @return Pair<Base64字符串, MIME类型> 或 null（如果失败）
+     */
+    private fun imageUriToBase64(uri: Uri): Pair<String, String>? {
+        try {
+            val inputStream = contentResolver.openInputStream(uri) ?: return null
+            val bytes = inputStream.readBytes()
+            inputStream.close()
+            
+            // 获取MIME类型
+            val mimeType = contentResolver.getType(uri) ?: "image/*"
+            
+            // 转换为Base64
+            val base64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+            return Pair(base64, mimeType)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return null
         }
     }
 
@@ -89,6 +118,45 @@ class MainActivity : ComponentActivity() {
                 val scope = rememberCoroutineScope()
                 
                 val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+                
+                // 图片选择器
+                val imagePickerLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.GetContent()
+                ) { uri: Uri? ->
+                    uri?.let {
+                        logMessage = "处理图片中..."
+                        scope.launch(Dispatchers.IO) {
+                            val result = imageUriToBase64(it)
+                            withContext(Dispatchers.Main) {
+                                if (result != null) {
+                                    val (base64, mimeType) = result
+                                    logMessage = "发送图片中..."
+                                    sendImageToMac(targetIp, base64, mimeType) { success, msg ->
+                                        val time = dateFormat.format(Date())
+                                        val record = SyncRecord(
+                                            timestamp = time,
+                                            content = if (success) "图片 (${base64.length / 1024}KB)" else "图片发送失败",
+                                            success = success,
+                                            message = msg,
+                                            type = "image",
+                                            mimeType = mimeType
+                                        )
+                                        syncRecords = listOf(record) + syncRecords
+                                        
+                                        if (success) {
+                                            logMessage = "图片发送成功 ✅"
+                                            ipHistoryManager.addOrUpdateIp(targetIp)
+                                        } else {
+                                            logMessage = "图片发送失败: $msg"
+                                        }
+                                    }
+                                } else {
+                                    logMessage = "图片处理失败"
+                                }
+                            }
+                        }
+                    }
+                }
                 
                 // 端口切换函数
                 fun togglePort() {
@@ -154,16 +222,36 @@ class MainActivity : ComponentActivity() {
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                // 清空按钮（左边）
-                                OutlinedButton(
-                                    onClick = { 
-                                        content = ""
-                                        logMessage = "已清空"
-                                    },
+                                // 左边：清空和图片按钮（上下排列）
+                                Column(
                                     modifier = Modifier.weight(0.5f),
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    Text("清空", style = MaterialTheme.typography.bodyMedium)
+                                    // 清空按钮
+                                    OutlinedButton(
+                                        onClick = { 
+                                            content = ""
+                                            logMessage = "已清空"
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                                    ) {
+                                        Text("清空", style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                    
+                                    // 图片选择按钮
+                                    OutlinedButton(
+                                        onClick = { 
+                                            imagePickerLauncher.launch("image/*")
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                                    ) {
+                                        Text("📷", style = MaterialTheme.typography.bodyLarge)
+                                        Spacer(modifier = Modifier.width(2.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("图片", style = MaterialTheme.typography.bodyMedium)
+                                    }
                                 }
                                 
                                 // 右边：发送按钮组（上下排列）
@@ -691,6 +779,30 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+    
+    private fun sendImageToMac(ipPort: String, base64Image: String, mimeType: String, onResult: (Boolean, String) -> Unit) {
+        val url = if (ipPort.startsWith("http")) "$ipPort/sync" else "http://$ipPort/sync"
+        
+        // 构建 JSON 数据
+        val json = """
+            {
+                "type": "image",
+                "content": "$base64Image",
+                "mimeType": "$mimeType",
+                "timestamp": ${System.currentTimeMillis() / 1000}
+            }
+        """.trimIndent()
+        
+        val requestBody = json.toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
+        val request = Request.Builder().url(url).post(requestBody).build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) { onResult(false, e.message ?: "网络错误") }
+            override fun onResponse(call: Call, response: Response) {
+                response.use { if (it.isSuccessful) onResult(true, "OK") }
+            }
+        })
+    }
 
     private fun sendToMac(ipPort: String, text: String, autoEnter: Boolean = false, onResult: (Boolean, String) -> Unit) {
         val url = if (ipPort.startsWith("http")) "$ipPort/sync" else "http://$ipPort/sync"
@@ -698,6 +810,7 @@ class MainActivity : ComponentActivity() {
         // 构建 JSON 数据
         val json = """
             {
+                "type": "text",
                 "content": "${text.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r")}",
                 "timestamp": ${System.currentTimeMillis() / 1000},
                 "autoEnter": $autoEnter
