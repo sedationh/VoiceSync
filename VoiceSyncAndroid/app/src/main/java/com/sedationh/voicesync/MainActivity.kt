@@ -68,6 +68,9 @@ class MainActivity : ComponentActivity() {
         // 初始化 IP 历史管理器
         val ipHistoryManager = IpHistoryManager(this)
         
+        // 初始化设置管理器
+        val settingsManager = SettingsManager(this)
+        
         setContent {
             VoiceSyncAndroidTheme {
                 // 从历史记录中加载最近使用的 IP，如果没有则使用默认值
@@ -75,9 +78,9 @@ class MainActivity : ComponentActivity() {
                 var targetIp by remember { mutableStateOf(defaultIp) }
                 var content by remember { mutableStateOf("") }
                 var logMessage by remember { mutableStateOf("等待输入...") }
-                var autoSendEnabled by remember { mutableStateOf(true) } // 自动发送开关
-                var autoClearEnabled by remember { mutableStateOf(true) } // 4.2 自动清除开关
-                var autoEnterEnabled by remember { mutableStateOf(false) } // 远程回车开关
+                var autoSendEnabled by remember { mutableStateOf(settingsManager.getAutoSendEnabled()) } // 自动发送开关（从持久化存储加载）
+                var autoClearEnabled by remember { mutableStateOf(settingsManager.getAutoClearEnabled()) } // 自动清除开关（从持久化存储加载）
+                var autoEnterEnabled by remember { mutableStateOf(settingsManager.getAutoEnterEnabled()) } // 远程回车开关（从持久化存储加载）
                 var isProductionMode by remember { mutableStateOf(false) } // 生产模式开关（默认开发模式）
                 var currentDelay by remember { mutableStateOf(2000L) } // 当前延迟时间（毫秒）
                 var syncRecords by remember { mutableStateOf(listOf<SyncRecord>()) } // 同步记录
@@ -330,6 +333,7 @@ class MainActivity : ComponentActivity() {
                                             checked = autoSendEnabled,
                                             onCheckedChange = { 
                                                 autoSendEnabled = it
+                                                settingsManager.setAutoSendEnabled(it) // 保存到持久化存储
                                                 if (!it) {
                                                     debounceJob?.cancel()
                                                     clearJob?.cancel()
@@ -356,7 +360,10 @@ class MainActivity : ComponentActivity() {
                                         }
                                         Switch(
                                             checked = autoClearEnabled,
-                                            onCheckedChange = { autoClearEnabled = it }
+                                            onCheckedChange = { 
+                                                autoClearEnabled = it
+                                                settingsManager.setAutoClearEnabled(it) // 保存到持久化存储
+                                            }
                                         )
                                     }
                                     
@@ -379,7 +386,10 @@ class MainActivity : ComponentActivity() {
                                             }
                                             Switch(
                                                 checked = autoEnterEnabled,
-                                                onCheckedChange = { autoEnterEnabled = it }
+                                                onCheckedChange = { 
+                                                    autoEnterEnabled = it
+                                                    settingsManager.setAutoEnterEnabled(it) // 保存到持久化存储
+                                                }
                                             )
                                         }
                                     }

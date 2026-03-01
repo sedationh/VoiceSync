@@ -125,7 +125,7 @@ increment_version() {
 
 # Get latest release tag from GitHub
 echo "🔍 Checking latest release version..."
-LATEST_TAG=$(gh release list --limit 1 | awk '{print $1}')
+LATEST_TAG=$(gh release list --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null)
 
 if [ -z "$LATEST_TAG" ]; then
     NEXT_VERSION="v0.0.1"
