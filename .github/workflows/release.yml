@@ -1,0 +1,134 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取所有 tag，供 gitVersionName() 使用
+      
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      
+      # ==================== Android 构建 ====================
+      
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+      
+      - name: Decode Android debug keystore
+        run: |
+          mkdir -p $HOME/.android
+          printf '%s' "${{ secrets.DEBUG_KEYSTORE }}" | base64 -d > $HOME/.android/debug.keystore
+      
+      - name: Verify Android keystore
+        run: keytool -list -keystore $HOME/.android/debug.keystore -storepass android -alias androiddebugkey
+      
+      - name: Make gradlew executable
+        working-directory: VoiceSyncAndroid
+        run: chmod +x gradlew
+      
+      - name: Build Android APK
+        working-directory: VoiceSyncAndroid
+        run: |
+          BUILD_TIME=$(date '+%Y-%m-%d %H:%M:%S')
+          ./gradlew assembleRelease -PBUILD_TIME="$BUILD_TIME"
+      
+      - name: Rename Android APK
+        run: |
+          APK=$(find VoiceSyncAndroid/app/build/outputs/apk/release -name '*.apk' | head -1)
+          mv "$APK" VoiceSync-Android-${{ steps.version.outputs.VERSION }}.apk
+      
+      # ==================== Mac 构建 ====================
+      
+      - name: Select Xcode version
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+      
+      - name: Update Mac build time
+        working-directory: VoiceSyncMac/VoiceSyncMac
+        run: |
+          BUILD_TIME=$(date '+%Y-%m-%d %H:%M:%S')
+          echo "let buildTime = \"$BUILD_TIME\"" > BuildTime.swift
+      
+      - name: Build Mac app (Archive)
+        working-directory: VoiceSyncMac
+        run: |
+          xcodebuild archive \
+            -project VoiceSyncMac.xcodeproj \
+            -scheme VoiceSyncMac \
+            -configuration Release \
+            -archivePath build/VoiceSyncMac.xcarchive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+      
+      - name: Export Mac app
+        working-directory: VoiceSyncMac
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath build/VoiceSyncMac.xcarchive \
+            -exportPath build/export \
+            -exportOptionsPlist build/export_options.plist
+      
+      - name: Create Mac ZIP
+        run: |
+          cd VoiceSyncMac/build/export
+          zip -r -9 ../../../VoiceSyncMac-${{ steps.version.outputs.VERSION }}.zip VoiceSyncMac.app
+      
+      # ==================== 发布到 GitHub Release ====================
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: VoiceSync v${{ steps.version.outputs.VERSION }}
+          files: |
+            VoiceSyncMac-${{ steps.version.outputs.VERSION }}.zip
+            VoiceSync-Android-${{ steps.version.outputs.VERSION }}.apk
+          body: |
+            # 🎙️ VoiceSync v${{ steps.version.outputs.VERSION }}
+
+            ## 📥 下载说明
+
+            ### macOS 用户
+            下载 **VoiceSyncMac-${{ steps.version.outputs.VERSION }}.zip**，解压后将 `VoiceSyncMac.app` 拖入应用程序文件夹。
+
+            首次运行需要授予以下权限：
+            - ✅ 网络连接权限（必须）- 接收手机数据
+            - ✅ 辅助功能权限（可选）- 自动粘贴功能
+
+            ### Android 用户
+            下载 **VoiceSync-Android-${{ steps.version.outputs.VERSION }}.apk**，直接安装即可。
+
+            需要手机和 Mac 连接在同一 Wi-Fi 网络下。
+
+            ---
+
+            ## ✨ 更新内容
+
+            详见 commit 历史
+
+            ---
+
+            ## 🚀 快速开始
+
+            1. **Mac 端**：打开应用，查看显示的本机 IP 地址
+            2. **Android 端**：打开应用，设置中输入 Mac 的 IP 地址
+            3. **开始使用**：在手机上说话，文字自动出现在电脑上
+
+            详细使用说明请查看 [README](https://github.com/sedationh/VoiceSync/blob/main/README.md)

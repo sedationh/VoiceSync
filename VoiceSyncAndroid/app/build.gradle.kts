@@ -4,6 +4,40 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+/**
+ * 从 git tag 读取版本号
+ * 参考 EpubSpoon 项目实现
+ */
+fun gitVersionName(): String {
+    return try {
+        val process = ProcessBuilder("git", "describe", "--tags", "--abbrev=0")
+            .directory(rootDir)
+            .redirectErrorStream(true)
+            .start()
+        val tag = process.inputStream.bufferedReader().readText().trim()
+        process.waitFor()
+        if (process.exitValue() == 0 && tag.isNotEmpty()) {
+            tag.removePrefix("v") // v0.0.5 -> 0.0.5
+        } else {
+            "0.0.1"
+        }
+    } catch (_: Exception) {
+        "0.0.1"
+    }
+}
+
+/**
+ * 将版本号转换为 versionCode
+ * 例如: 0.0.5 -> 5, 1.2.3 -> 10203
+ */
+fun gitVersionCode(): Int {
+    val name = gitVersionName()
+    val parts = name.split(".").map { it.toIntOrNull() ?: 0 }
+    return parts.getOrElse(0) { 0 } * 10000 + 
+           parts.getOrElse(1) { 0 } * 100 + 
+           parts.getOrElse(2) { 0 }
+}
+
 android {
     namespace = "com.sedationh.voicesync"
     compileSdk {
@@ -14,8 +48,8 @@ android {
         applicationId = "com.sedationh.voicesync"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = gitVersionCode()
+        versionName = gitVersionName()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

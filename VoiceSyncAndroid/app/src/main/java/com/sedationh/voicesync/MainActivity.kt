@@ -112,16 +112,46 @@ class MainActivity : ComponentActivity() {
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = if (BuildConfig.DEBUG) "VoiceSync (Dev)" else "VoiceSync",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Text(
-                                    text = "构建: ${BuildConfig.BUILD_TIME}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                                )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = if (BuildConfig.DEBUG) "VoiceSync (Dev)" else "VoiceSync",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "v${BuildConfig.VERSION_NAME}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                        )
+                                        Text(
+                                            text = "•",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                        )
+                                        Text(
+                                            text = BuildConfig.BUILD_TIME,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                        )
+                                    }
+                                }
+                                // 检查更新按钮
+                                OutlinedButton(
+                                    onClick = {
+                                        scope.launch {
+                                            checkForUpdate { updateResult ->
+                                                logMessage = updateResult
+                                            }
+                                        }
+                                    },
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                                ) {
+                                    Text("检查更新", style = MaterialTheme.typography.labelMedium)
+                                }
                             }
                             
                             Spacer(modifier = Modifier.height(8.dp))
@@ -619,6 +649,50 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * 检查应用更新
+     */
+    private suspend fun checkForUpdate(onMessage: (String) -> Unit) {
+        onMessage("正在检查更新...")
+        
+        val result = UpdateChecker.check(BuildConfig.VERSION_NAME)
+        
+        if (result == null) {
+            onMessage("检查更新失败，请检查网络连接")
+            return
+        }
+        
+        if (result.hasUpdate) {
+            onMessage("发现新版本: v${result.latestVersion}")
+            // 在主线程显示对话框
+            runOnUiThread {
+                androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle("发现新版本 v${result.latestVersion}")
+                    .setMessage(
+                        buildString {
+                            append("当前版本：v${result.currentVersion}\n")
+                            append("最新版本：v${result.latestVersion}\n\n")
+                            if (result.releaseNotes.isNotBlank()) {
+                                append("更新说明：\n${result.releaseNotes}\n\n")
+                            }
+                            append("⚠️ 如安装时提示「签名不一致」，请先卸载旧版本再安装。\n（设置不会丢失）")
+                        }
+                    )
+                    .setPositiveButton("下载更新") { _, _ ->
+                        val intent = android.content.Intent(
+                            android.content.Intent.ACTION_VIEW,
+                            android.net.Uri.parse(result.downloadUrl)
+                        )
+                        startActivity(intent)
+                    }
+                    .setNegativeButton("稍后再说", null)
+                    .show()
+            }
+        } else {
+            onMessage("已是最新版本 v${result.currentVersion}")
         }
     }
 
