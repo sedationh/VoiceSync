@@ -23,7 +23,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.core.content.ContextCompat
 import com.sedationh.voicesync.ui.theme.VoiceSyncAndroidTheme
 import kotlinx.coroutines.*
@@ -145,8 +150,34 @@ class MainActivity : ComponentActivity() {
                 var currentDelay by remember { mutableStateOf(2000L) } // 当前延迟时间（毫秒）
                 var syncRecords by remember { mutableStateOf(listOf<SyncRecord>()) } // 同步记录
                 var showIpHistory by remember { mutableStateOf(false) } // 是否显示 IP 历史列表
+                var showDeviceDiscovery by remember { mutableStateOf(false) } // 是否显示设备发现对话框
                 var updateResult by remember { mutableStateOf<UpdateChecker.UpdateResult?>(null) } // 更新检查结果
                 val scope = rememberCoroutineScope()
+                
+                // 输入框焦点请求器
+                val focusRequester = remember { FocusRequester() }
+                val lifecycleOwner = LocalLifecycleOwner.current
+                
+                // 监听生命周期，当应用进入前台时自动聚焦
+                DisposableEffect(lifecycleOwner) {
+                    val observer = LifecycleEventObserver { _, event ->
+                        if (event == Lifecycle.Event.ON_RESUME) {
+                            // 延迟一点确保 UI 完全渲染
+                            scope.launch {
+                                delay(100)
+                                try {
+                                    focusRequester.requestFocus()
+                                } catch (e: Exception) {
+                                    // 忽略焦点请求失败
+                                }
+                            }
+                        }
+                    }
+                    lifecycleOwner.lifecycle.addObserver(observer)
+                    onDispose {
+                        lifecycleOwner.lifecycle.removeObserver(observer)
+                    }
+                }
                 
                 val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
                 
@@ -446,7 +477,8 @@ class MainActivity : ComponentActivity() {
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .heightIn(max = maxHeightDp),
+                                    .heightIn(max = maxHeightDp)
+                                    .focusRequester(focusRequester),
                                 minLines = 5,
                                 maxLines = Int.MAX_VALUE
                             )
@@ -592,6 +624,18 @@ class MainActivity : ComponentActivity() {
                                         )
                                         
                                         Spacer(modifier = Modifier.width(8.dp))
+                                        
+                                        // 扫描设备按钮
+                                        IconButton(
+                                            onClick = { showDeviceDiscovery = true },
+                                            modifier = Modifier.size(48.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = androidx.compose.material.icons.Icons.Default.KeyboardArrowDown,
+                                                contentDescription = "扫描设备",
+                                                tint = MaterialTheme.colorScheme.secondary
+                                            )
+                                        }
                                         
                                         // IP 历史按钮
                                         IconButton(
@@ -809,6 +853,17 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                 }
+                
+                // 设备发现对话框
+                if (showDeviceDiscovery) {
+                    DeviceDiscoveryDialog(
+                        onDismiss = { showDeviceDiscovery = false },
+                        onDeviceSelected = { address ->
+                            targetIp = address
+                            logMessage = "已选择设备: $address"
+                        }
+                    )
+                }
             }
         }
     }
@@ -860,4 +915,230 @@ class MainActivity : ComponentActivity() {
             }
         })
     }
+}
+
+/**
+ * 设备发现对话框
+ * 
+ * @param onDismiss 关闭对话框的回调
+ * @param onDeviceSelected 选择设备后的回调，参数为设备的完整地址（IP:Port）
+ */
+@Composable
+fun DeviceDiscoveryDialog(
+    onDismiss: () -> Unit,
+    onDeviceSelected: (String) -> Unit
+) {
+    var devices by remember { mutableStateOf<List<DiscoveredDevice>>(emptyList()) }
+    var isScanning by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val serviceDiscovery = remember { ServiceDiscovery(context) }
+    val scope = rememberCoroutineScope()
+    
+    // 启动设备扫描
+    LaunchedEffect(Unit) {
+        scope.launch {
+            try {
+                serviceDiscovery.discoverDevices().collect { discoveredDevices ->
+                    devices = discoveredDevices
+                    isScanning = false
+                }
+            } catch (e: Exception) {
+                errorMessage = "扫描失败: ${e.message}"
+                isScanning = false
+            }
+        }
+    }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = androidx.compose.material.icons.Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Text("扫描局域网设备")
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 200.dp, max = 400.dp)
+            ) {
+                when {
+                    // 显示错误信息
+                    errorMessage != null -> {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "❌",
+                                style = MaterialTheme.typography.displayMedium
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = errorMessage ?: "",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                    // 正在扫描且没有设备
+                    isScanning && devices.isEmpty() -> {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(48.dp),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "正在扫描局域网...",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "请确保 Mac 端已启动",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                    // 扫描完成但没有找到设备
+                    !isScanning && devices.isEmpty() -> {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "📡",
+                                style = MaterialTheme.typography.displayMedium
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "未发现设备",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "请确保：",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "• Mac 端已启动 VoiceSync",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "• 连接同一 Wi-Fi",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "• 防火墙未屏蔽",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    // 找到设备，显示列表
+                    else -> {
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(devices) { device ->
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            onDeviceSelected(device.address)
+                                            onDismiss()
+                                        },
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            // 设备名称
+                                            Text(
+                                                text = device.displayName,
+                                                style = MaterialTheme.typography.titleMedium,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            // IP 地址
+                                            Text(
+                                                text = device.address,
+                                                style = MaterialTheme.typography.bodySmall.copy(
+                                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                                                ),
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                            )
+                                        }
+                                        
+                                        // 图标指示可点击
+                                        Icon(
+                                            imageVector = androidx.compose.material.icons.Icons.Default.KeyboardArrowDown,
+                                            contentDescription = "选择",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // 底部提示
+                        if (isScanning) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "继续扫描中...",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("关闭")
+            }
+        }
+    )
 }

@@ -68,6 +68,7 @@ class AppState: ObservableObject {
     
     let server = HttpServer()
     var syncManager = SyncManager()
+    let broadcaster = ServiceBroadcaster() // mDNS 服务广播器
     
     @Published var isRunning = false
     @Published var localIP: String = "获取中..."
@@ -90,7 +91,16 @@ class AppState: ObservableObject {
             }
             .store(in: &cancellables)
         
+        // 转发 broadcaster 的变化通知
+        broadcaster.objectWillChange
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+        
         startServer()
+        startBroadcast() // 启动 mDNS 广播
     }
     
     func startServer() {
@@ -146,6 +156,18 @@ class AppState: ObservableObject {
             isRunning = false
             print("[\(AppConfig.appName)] 启动失败: \(error)")
         }
+    }
+    
+    // 启动 mDNS 服务广播
+    func startBroadcast() {
+        broadcaster.startBroadcast(port: Int(AppConfig.port))
+        print("[\(AppConfig.appName)] mDNS 广播已启动")
+    }
+    
+    // 停止 mDNS 服务广播
+    func stopBroadcast() {
+        broadcaster.stopBroadcast()
+        print("[\(AppConfig.appName)] mDNS 广播已停止")
     }
     
     // 标记有新消息

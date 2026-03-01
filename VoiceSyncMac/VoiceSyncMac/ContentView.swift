@@ -275,6 +275,28 @@ struct ContentView: View {
             .buttonStyle(PlainButtonStyle())
             .help("点击复制地址，发送到手机")
             
+            // mDNS 广播状态栏
+            HStack(spacing: 6) {
+                Image(systemName: appState.broadcaster.isPublishing ? "antenna.radiowaves.left.and.right" : "antenna.radiowaves.left.and.right.slash")
+                    .font(.system(size: 10))
+                    .foregroundColor(appState.broadcaster.isPublishing ? .green : .orange)
+                
+                Text(appState.broadcaster.isPublishing ? "正在广播到局域网" : "广播未启动")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                
+                if let serviceName = appState.broadcaster.serviceName {
+                    Text("(\(serviceName))")
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary.opacity(0.7))
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(appState.broadcaster.isPublishing ? Color.green.opacity(0.05) : Color.orange.opacity(0.05))
+            
             Divider()
             
             // 主内容区
