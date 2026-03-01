@@ -85,6 +85,7 @@ class MainActivity : ComponentActivity() {
                 var currentDelay by remember { mutableStateOf(2000L) } // 当前延迟时间（毫秒）
                 var syncRecords by remember { mutableStateOf(listOf<SyncRecord>()) } // 同步记录
                 var showIpHistory by remember { mutableStateOf(false) } // 是否显示 IP 历史列表
+                var updateResult by remember { mutableStateOf<UpdateChecker.UpdateResult?>(null) } // 更新检查结果
                 val scope = rememberCoroutineScope()
                 
                 val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
@@ -142,9 +143,16 @@ class MainActivity : ComponentActivity() {
                                 // 检查更新按钮
                                 OutlinedButton(
                                     onClick = {
+                                        logMessage = "正在检查更新..."
                                         scope.launch {
-                                            checkForUpdate { updateResult ->
-                                                logMessage = updateResult
+                                            val result = UpdateChecker.check(BuildConfig.VERSION_NAME)
+                                            if (result == null) {
+                                                logMessage = "检查更新失败，请检查网络连接"
+                                            } else if (result.hasUpdate) {
+                                                updateResult = result
+                                                logMessage = "发现新版本: v${result.latestVersion}"
+                                            } else {
+                                                logMessage = "已是最新版本 v${result.currentVersion}"
                                             }
                                         }
                                     },
@@ -648,51 +656,54 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-            }
-        }
-    }
-
-    /**
-     * 检查应用更新
-     */
-    private suspend fun checkForUpdate(onMessage: (String) -> Unit) {
-        onMessage("正在检查更新...")
-        
-        val result = UpdateChecker.check(BuildConfig.VERSION_NAME)
-        
-        if (result == null) {
-            onMessage("检查更新失败，请检查网络连接")
-            return
-        }
-        
-        if (result.hasUpdate) {
-            onMessage("发现新版本: v${result.latestVersion}")
-            // 在主线程显示对话框
-            runOnUiThread {
-                androidx.appcompat.app.AlertDialog.Builder(this)
-                    .setTitle("发现新版本 v${result.latestVersion}")
-                    .setMessage(
-                        buildString {
-                            append("当前版本：v${result.currentVersion}\n")
-                            append("最新版本：v${result.latestVersion}\n\n")
-                            if (result.releaseNotes.isNotBlank()) {
-                                append("更新说明：\n${result.releaseNotes}\n\n")
+                
+                // 更新对话框
+                updateResult?.let { result ->
+                    AlertDialog(
+                        onDismissRequest = { updateResult = null },
+                        title = { Text("发现新版本 v${result.latestVersion}") },
+                        text = {
+                            Column {
+                                Text("当前版本：v${result.currentVersion}")
+                                Text("最新版本：v${result.latestVersion}")
+                                if (result.releaseNotes.isNotBlank()) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text("更新说明：", style = MaterialTheme.typography.bodyMedium)
+                                    Text(
+                                        result.releaseNotes.take(200) + if (result.releaseNotes.length > 200) "..." else "",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    "⚠️ 如安装时提示「签名不一致」，请先卸载旧版本再安装。\n（设置不会丢失）",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
-                            append("⚠️ 如安装时提示「签名不一致」，请先卸载旧版本再安装。\n（设置不会丢失）")
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    val intent = android.content.Intent(
+                                        android.content.Intent.ACTION_VIEW,
+                                        android.net.Uri.parse(result.downloadUrl)
+                                    )
+                                    startActivity(intent)
+                                    updateResult = null
+                                }
+                            ) {
+                                Text("下载更新")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { updateResult = null }) {
+                                Text("稍后再说")
+                            }
                         }
                     )
-                    .setPositiveButton("下载更新") { _, _ ->
-                        val intent = android.content.Intent(
-                            android.content.Intent.ACTION_VIEW,
-                            android.net.Uri.parse(result.downloadUrl)
-                        )
-                        startActivity(intent)
-                    }
-                    .setNegativeButton("稍后再说", null)
-                    .show()
+                }
             }
-        } else {
-            onMessage("已是最新版本 v${result.currentVersion}")
         }
     }
 
