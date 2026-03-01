@@ -1,6 +1,9 @@
 package com.sedationh.voicesync
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Base64
 import androidx.activity.ComponentActivity
@@ -21,6 +24,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.sedationh.voicesync.ui.theme.VoiceSyncAndroidTheme
 import kotlinx.coroutines.*
 import okhttp3.*
@@ -101,7 +105,34 @@ class MainActivity : ComponentActivity() {
         val settingsManager = SettingsManager(this)
         
         setContent {
-            VoiceSyncAndroidTheme {
+            VoiceSyncAndroidTheme(dynamicColor = false) { // 禁用动态颜色，使用固定浅绿色主题
+                // 通知权限请求（Android 13+）
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+                        contract = ActivityResultContracts.RequestPermission()
+                    ) { isGranted ->
+                        if (isGranted) {
+                            VoiceSyncService.start(this@MainActivity, ipHistoryManager.getLatestIp() ?: "")
+                        }
+                    }
+                    
+                    LaunchedEffect(Unit) {
+                        if (ContextCompat.checkSelfPermission(
+                                this@MainActivity,
+                                Manifest.permission.POST_NOTIFICATIONS
+                            ) != PackageManager.PERMISSION_GRANTED
+                        ) {
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        } else {
+                            VoiceSyncService.start(this@MainActivity, ipHistoryManager.getLatestIp() ?: "")
+                        }
+                    }
+                } else {
+                    LaunchedEffect(Unit) {
+                        VoiceSyncService.start(this@MainActivity, ipHistoryManager.getLatestIp() ?: "")
+                    }
+                }
+                
                 // 从历史记录中加载最近使用的 IP，如果没有则使用默认值
                 val defaultIp = ipHistoryManager.getLatestIp() ?: "192.168.31.62:$defaultPort"
                 var targetIp by remember { mutableStateOf(defaultIp) }
@@ -163,6 +194,11 @@ class MainActivity : ComponentActivity() {
                     val currentIp = targetIp.substringBeforeLast(":")
                     val newPort = if (isProductionMode) "4500" else "4501"
                     targetIp = "$currentIp:$newPort"
+                }
+                
+                // 监听 targetIp 变化，更新通知
+                LaunchedEffect(targetIp) {
+                    VoiceSyncService.start(this@MainActivity, targetIp)
                 }
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -239,7 +275,7 @@ class MainActivity : ComponentActivity() {
                                         Text("清空", style = MaterialTheme.typography.bodyMedium)
                                     }
                                     
-                                    // 图片选择按钮
+                                    // 图片选择按钮（只显示图标）
                                     OutlinedButton(
                                         onClick = { 
                                             imagePickerLauncher.launch("image/*")
@@ -248,9 +284,6 @@ class MainActivity : ComponentActivity() {
                                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
                                     ) {
                                         Text("📷", style = MaterialTheme.typography.bodyLarge)
-                                        Spacer(modifier = Modifier.width(2.dp))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text("图片", style = MaterialTheme.typography.bodyMedium)
                                     }
                                 }
                                 
