@@ -69,7 +69,6 @@ android {
             applicationIdSuffix = ".dev"
             resValue("string", "app_name", "VoiceSync (Dev)")
             buildConfigField("int", "SYNC_PORT", "4501")
-            buildConfigField("String", "BUILD_TIME", "\"${project.findProperty("BUILD_TIME") ?: "Unknown"}\"")
         }
         release {
             isMinifyEnabled = false
@@ -80,7 +79,6 @@ android {
             signingConfig = signingConfigs.getByName("release")
             resValue("string", "app_name", "VoiceSync")
             buildConfigField("int", "SYNC_PORT", "4500")
-            buildConfigField("String", "BUILD_TIME", "\"${project.findProperty("BUILD_TIME") ?: "Unknown"}\"")
         }
     }
     compileOptions {

@@ -46,9 +46,7 @@ jobs:
       
       - name: Build Android APK
         working-directory: VoiceSyncAndroid
-        run: |
-          BUILD_TIME=$(date '+%Y-%m-%d %H:%M:%S')
-          ./gradlew assembleRelease -PBUILD_TIME="$BUILD_TIME"
+        run: ./gradlew assembleRelease
       
       - name: Rename Android APK
         run: |
@@ -59,12 +57,6 @@ jobs:
       
       - name: Select Xcode version
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
-      
-      - name: Update Mac build time
-        working-directory: VoiceSyncMac/VoiceSyncMac
-        run: |
-          BUILD_TIME=$(date '+%Y-%m-%d %H:%M:%S')
-          echo "let buildTime = \"$BUILD_TIME\"" > BuildTime.swift
       
       - name: Build Mac app (Archive)
         working-directory: VoiceSyncMac
