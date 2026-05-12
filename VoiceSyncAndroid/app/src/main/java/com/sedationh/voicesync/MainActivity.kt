@@ -141,6 +141,7 @@ class MainActivity : ComponentActivity() {
                 // 从历史记录中加载最近使用的 IP，如果没有则使用默认值
                 val defaultIp = ipHistoryManager.getLatestIp() ?: "192.168.31.62:$defaultPort"
                 var targetIp by remember { mutableStateOf(defaultIp) }
+                var selectedDeviceName by remember { mutableStateOf(ipHistoryManager.getLatestDisplayName()) }
                 var content by remember { mutableStateOf("") }
                 var logMessage by remember { mutableStateOf("等待输入...") }
                 var autoSendEnabled by remember { mutableStateOf(settingsManager.getAutoSendEnabled()) } // 自动发送开关（从持久化存储加载）
@@ -261,7 +262,9 @@ class MainActivity : ComponentActivity() {
                 fun togglePort() {
                     val currentIp = targetIp.substringBeforeLast(":")
                     val newPort = if (isProductionMode) "4500" else "4501"
-                    targetIp = "$currentIp:$newPort"
+                    val nextTarget = "$currentIp:$newPort"
+                    targetIp = nextTarget
+                    selectedDeviceName = ipHistoryManager.getDisplayName(nextTarget) ?: selectedDeviceName
                 }
                 
                 // 监听 targetIp 变化，更新通知
@@ -647,15 +650,34 @@ class MainActivity : ComponentActivity() {
                                     
                                     Spacer(modifier = Modifier.height(8.dp))
                                     
-                                    // IP地址输入框
+                                    selectedDeviceName?.takeIf { it.isNotBlank() }?.let { name ->
+                                        Text(
+                                            text = name,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                                        )
+                                        Text(
+                                            text = targetIp,
+                                            style = MaterialTheme.typography.labelMedium.copy(
+                                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                                            ),
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                    }
+
+                                    // 设备地址输入框
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         TextField(
                                             value = targetIp,
-                                            onValueChange = { targetIp = it },
-                                            label = { Text("Mac IP 地址") },
+                                            onValueChange = {
+                                                targetIp = it
+                                                selectedDeviceName = ipHistoryManager.getDisplayName(it)
+                                            },
+                                            label = { Text("设备地址") },
                                             modifier = Modifier.weight(1f),
                                             singleLine = true
                                         )
@@ -702,7 +724,7 @@ class MainActivity : ComponentActivity() {
                                         ) {
                                             Column(modifier = Modifier.padding(8.dp)) {
                                                 Text(
-                                                    text = "IP 历史记录",
+                                                    text = "设备历史记录",
                                                     style = MaterialTheme.typography.labelMedium,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
@@ -717,19 +739,30 @@ class MainActivity : ComponentActivity() {
                                                         horizontalArrangement = Arrangement.SpaceBetween,
                                                         verticalAlignment = Alignment.CenterVertically
                                                     ) {
-                                                        // IP 地址（可点击选择）
-                                                        Text(
-                                                            text = history.ipAddress,
-                                                            style = MaterialTheme.typography.bodyMedium,
-                                                            color = MaterialTheme.colorScheme.primary,
+                                                        // 设备名称优先显示，地址作为辅助信息
+                                                        Column(
                                                             modifier = Modifier
                                                                 .weight(1f)
                                                                 .clickable {
                                                                     targetIp = history.ipAddress
+                                                                    selectedDeviceName = history.displayName
                                                                     showIpHistory = false
-                                                                    logMessage = "已选择: ${history.ipAddress}"
+                                                                    logMessage = "已选择: ${history.displayName ?: history.ipAddress}"
                                                                 }
-                                                        )
+                                                        ) {
+                                                            Text(
+                                                                text = history.displayName ?: "手动地址",
+                                                                style = MaterialTheme.typography.bodyMedium,
+                                                                color = MaterialTheme.colorScheme.primary
+                                                            )
+                                                            Text(
+                                                                text = history.ipAddress,
+                                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                                                                ),
+                                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                            )
+                                                        }
                                                         
                                                         // 删除按钮
                                                         IconButton(
@@ -895,9 +928,11 @@ class MainActivity : ComponentActivity() {
                 if (showDeviceDiscovery) {
                     DeviceDiscoveryDialog(
                         onDismiss = { showDeviceDiscovery = false },
-                        onDeviceSelected = { address ->
-                            targetIp = address
-                            logMessage = "已选择设备: $address"
+                        onDeviceSelected = { device ->
+                            targetIp = device.address
+                            selectedDeviceName = device.displayName
+                            ipHistoryManager.addOrUpdateIp(device.address, device.displayName)
+                            logMessage = "已选择设备: ${device.displayName}"
                         }
                     )
                 }
@@ -963,12 +998,12 @@ class MainActivity : ComponentActivity() {
  * 设备发现对话框
  * 
  * @param onDismiss 关闭对话框的回调
- * @param onDeviceSelected 选择设备后的回调，参数为设备的完整地址（IP:Port）
+ * @param onDeviceSelected 选择设备后的回调
  */
 @Composable
 fun DeviceDiscoveryDialog(
     onDismiss: () -> Unit,
-    onDeviceSelected: (String) -> Unit
+    onDeviceSelected: (DiscoveredDevice) -> Unit
 ) {
     var devices by remember { mutableStateOf<List<DiscoveredDevice>>(emptyList()) }
     var isScanning by remember { mutableStateOf(true) }
@@ -1110,7 +1145,7 @@ fun DeviceDiscoveryDialog(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable {
-                                            onDeviceSelected(device.address)
+                                            onDeviceSelected(device)
                                             onDismiss()
                                         },
                                     colors = CardDefaults.cardColors(

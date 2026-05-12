@@ -11,6 +11,7 @@ import com.google.gson.reflect.TypeToken
  */
 data class IpHistory(
     val ipAddress: String,
+    val displayName: String? = null,
     val lastUsedTime: Long = System.currentTimeMillis()
 )
 
@@ -60,14 +61,17 @@ class IpHistoryManager(context: Context) {
      * - 如果是新 IP，直接添加到最前面
      * - 超过最大数量时，删除最旧的记录
      */
-    fun addOrUpdateIp(ipAddress: String) {
+    fun addOrUpdateIp(ipAddress: String, displayName: String? = null) {
         if (ipAddress.isBlank()) return
+
+        val existingName = _historyList.firstOrNull { it.ipAddress == ipAddress }?.displayName
+        val savedName = displayName?.takeIf { it.isNotBlank() } ?: existingName
         
         // 移除已存在的相同 IP（如果有）
         _historyList.removeAll { it.ipAddress == ipAddress }
         
         // 添加到列表最前面
-        _historyList.add(0, IpHistory(ipAddress, System.currentTimeMillis()))
+        _historyList.add(0, IpHistory(ipAddress, savedName, System.currentTimeMillis()))
         
         // 限制列表大小
         while (_historyList.size > MAX_HISTORY_SIZE) {
@@ -98,5 +102,19 @@ class IpHistoryManager(context: Context) {
      */
     fun getLatestIp(): String? {
         return _historyList.firstOrNull()?.ipAddress
+    }
+
+    /**
+     * 获取最近使用设备的显示名称
+     */
+    fun getLatestDisplayName(): String? {
+        return _historyList.firstOrNull()?.displayName
+    }
+
+    /**
+     * 获取指定地址对应的显示名称
+     */
+    fun getDisplayName(ipAddress: String): String? {
+        return _historyList.firstOrNull { it.ipAddress == ipAddress }?.displayName
     }
 }
