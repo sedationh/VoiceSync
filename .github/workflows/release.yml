@@ -11,54 +11,54 @@ jobs:
     runs-on: macos-latest
     permissions:
       contents: read
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+
       - name: Get version from tag
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-      
+
       # --- Android ---
-      
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-      
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-      
+
       - name: Decode Android debug keystore
         run: |
           mkdir -p $HOME/.android
           printf '%s' "${{ secrets.DEBUG_KEYSTORE }}" | base64 -d > $HOME/.android/debug.keystore
-      
+
       - name: Verify Android keystore
         run: keytool -list -keystore $HOME/.android/debug.keystore -storepass android -alias androiddebugkey
-      
+
       - name: Make gradlew executable
         working-directory: VoiceSyncAndroid
         run: chmod +x gradlew
-      
+
       - name: Build Android APK
         working-directory: VoiceSyncAndroid
         run: ./gradlew assembleRelease
-      
+
       - name: Rename Android APK
         run: |
           APK=$(find VoiceSyncAndroid/app/build/outputs/apk/release -name '*.apk' | head -1)
           mv "$APK" VoiceSync-Android-${{ steps.version.outputs.VERSION }}.apk
-      
+
       # --- Mac ---
-      
+
       - name: Select Xcode version
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
-      
+
       - name: Build Mac app (Archive)
         working-directory: VoiceSyncMac
         run: |
@@ -70,7 +70,7 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
-      
+
       - name: Create export_options.plist
         working-directory: VoiceSyncMac
         run: |
@@ -85,7 +85,7 @@ jobs:
           </dict>
           </plist>
           EOF
-      
+
       - name: Export Mac app
         working-directory: VoiceSyncMac
         run: |
@@ -93,20 +93,20 @@ jobs:
             -archivePath build/VoiceSyncMac.xcarchive \
             -exportPath build/export \
             -exportOptionsPlist build/export_options.plist
-      
+
       - name: Create Mac ZIP
         run: |
           cd VoiceSyncMac/build/export
           zip -r -9 ../../../VoiceSyncMac-${{ steps.version.outputs.VERSION }}.zip VoiceSyncMac.app
-      
+
       # --- 上传构建产物 ---
-      
+
       - name: Upload Mac artifact
         uses: actions/upload-artifact@v4
         with:
           name: mac-build
           path: VoiceSyncMac-${{ steps.version.outputs.VERSION }}.zip
-      
+
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4
         with:
@@ -118,40 +118,40 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: read
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Get version from tag
         id: version
         shell: bash
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: 'pip'
           cache-dependency-path: VoiceSyncWindows/requirements.txt
-      
+
       - name: Install dependencies
         working-directory: VoiceSyncWindows
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller
-      
+
       - name: Build Windows executable
         working-directory: VoiceSyncWindows
         run: pyinstaller voicesync.spec --noconfirm
-      
+
       - name: Create Windows ZIP
         shell: bash
         run: |
           cd VoiceSyncWindows/dist
           7z a -tzip "../../VoiceSync-Windows-${{ steps.version.outputs.VERSION }}.zip" VoiceSync/
-      
+
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
@@ -164,21 +164,21 @@ jobs:
     needs: [build-mac-android, build-windows]
     permissions:
       contents: write
-    
+
     steps:
       - name: Get version from tag
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-      
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
           merge-multiple: true
-      
+
       - name: List artifacts
         run: ls -lhR artifacts/
-      
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -194,7 +194,6 @@ jobs:
 
             ### Windows 用户
             下载 **VoiceSync-Windows-${{ steps.version.outputs.VERSION }}.zip**，解压后运行 `VoiceSync.exe` 即可。
-            - 无需安装 Python 或其他运行时
             - 首次运行如果弹出 Windows Defender 提示，点击"仍要运行"
             - 如防火墙提示，请允许网络访问
 

@@ -105,13 +105,21 @@ def set_image(image_data: bytes) -> bool:
         user32.EmptyClipboard()
 
         # 设置 CF_DIB 格式（广泛兼容）
-        _alloc_and_set(dib_data, CF_DIB)
+        dib_ok = _alloc_and_set(dib_data, CF_DIB)
+        if not dib_ok:
+            print("⚠️ CF_DIB 格式写入失败")
 
         # 设置 PNG 格式（现代应用如 Chrome, Office 支持）
+        png_ok = False
         png_format = user32.RegisterClipboardFormatW("PNG")
         if png_format:
-            _alloc_and_set(png_data, png_format)
+            png_ok = _alloc_and_set(png_data, png_format)
+            if not png_ok:
+                print("⚠️ PNG 格式写入失败")
 
+        if not dib_ok and not png_ok:
+            print("❌ 所有图片格式写入剪贴板均失败")
+            return False
         return True
     finally:
         user32.CloseClipboard()

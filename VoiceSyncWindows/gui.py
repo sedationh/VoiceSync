@@ -184,9 +184,11 @@ class VoiceSyncApp:
         except Exception as e:
             self.is_running = False
             self._update_status(False, str(e))
+            self._update_mdns_status(False)
             print(f"[{APP_NAME}] HTTP 服务启动失败: {e}")
+            return  # HTTP 失败时不广播 mDNS，避免 Android 发现不可用的设备
 
-        # mDNS 广播
+        # mDNS 广播（仅在 HTTP 启动成功后）
         try:
             self.mdns.start(PORT, self.local_ip)
             self._update_mdns_status(True)

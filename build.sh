@@ -38,10 +38,11 @@ show_help() {
     echo "用法: ./build.sh [命令]"
     echo ""
     echo "构建命令:"
-    echo "  all              构建所有平台应用 (默认)"
+    echo "  all              构建所有平台应用 (默认，不含 Windows)"
     echo "  mac              构建 Mac 应用"
     echo "  android          构建 Android 应用 (正式版)"
     echo "  android-dev      构建 Android 应用 (开发版)"
+    echo "  windows          构建 Windows 应用 (需要 Python + PyInstaller)"
     echo ""
     echo "安装命令:"
     echo "  install-mac      安装 Mac 应用到 Applications 目录"
@@ -60,8 +61,62 @@ clean_build() {
     rm -rf "$OUTPUT_DIR"
     rm -rf "$SCRIPT_DIR/VoiceSyncMac/build"
     rm -rf "$SCRIPT_DIR/VoiceSyncAndroid/app/build"
+    rm -rf "$SCRIPT_DIR/VoiceSyncWindows/build"
+    rm -rf "$SCRIPT_DIR/VoiceSyncWindows/dist"
     
     print_success "清理完成"
+}
+
+# 构建 Windows 应用
+build_windows() {
+    print_step "开始构建 Windows 应用..."
+    
+    cd "$SCRIPT_DIR/VoiceSyncWindows"
+    mkdir -p "$OUTPUT_DIR"
+    
+    # 检查 Python
+    local PYTHON=""
+    if command -v py &> /dev/null; then
+        PYTHON="py"
+    elif command -v python &> /dev/null; then
+        PYTHON="python"
+    elif command -v python3 &> /dev/null; then
+        PYTHON="python3"
+    else
+        print_error "未找到 Python，请先安装 Python 3.8+"
+        exit 1
+    fi
+    
+    print_success "使用 Python: $($PYTHON --version)"
+    
+    # 检查 PyInstaller
+    if ! $PYTHON -m PyInstaller --version &> /dev/null; then
+        print_step "安装 PyInstaller..."
+        $PYTHON -m pip install pyinstaller
+    fi
+    
+    # 安装依赖
+    print_step "安装依赖..."
+    $PYTHON -m pip install -r requirements.txt --quiet
+    
+    # 构建
+    print_step "正在打包..."
+    $PYTHON -m PyInstaller voicesync.spec --noconfirm
+    
+    # 创建 ZIP
+    print_step "正在创建 ZIP..."
+    cd dist
+    if command -v 7z &> /dev/null; then
+        7z a -tzip "$OUTPUT_DIR/VoiceSync-Windows.zip" VoiceSync/
+    elif command -v zip &> /dev/null; then
+        zip -r -9 "$OUTPUT_DIR/VoiceSync-Windows.zip" VoiceSync/
+    else
+        # Fallback: 使用 PowerShell
+        powershell -Command "Compress-Archive -Path 'VoiceSync' -DestinationPath '$OUTPUT_DIR/VoiceSync-Windows.zip' -Force"
+    fi
+    
+    SIZE=$(du -sh "$OUTPUT_DIR/VoiceSync-Windows.zip" | cut -f1)
+    print_success "Windows 应用构建完成: $OUTPUT_DIR/VoiceSync-Windows.zip ($SIZE)"
 }
 
 # 构建 Mac 应用
@@ -317,6 +372,9 @@ case "${1:-all}" in
     android-dev)
         build_android debug
         ;;
+    windows)
+        build_windows
+        ;;
     install-android)
         install_android
         ;;
@@ -333,9 +391,6 @@ case "${1:-all}" in
         print_error "未知命令: $1"
         echo ""
         show_help
-        exit 1
-        ;;
-esac
         exit 1
         ;;
 esac
