@@ -70,10 +70,10 @@ clean_build() {
 # 构建 Windows 应用
 build_windows() {
     print_step "开始构建 Windows 应用..."
-    
+
     cd "$SCRIPT_DIR/VoiceSyncWindows"
     mkdir -p "$OUTPUT_DIR"
-    
+
     # 检查 Python
     local PYTHON=""
     if command -v py &> /dev/null; then
@@ -86,23 +86,23 @@ build_windows() {
         print_error "未找到 Python，请先安装 Python 3.8+"
         exit 1
     fi
-    
+
     print_success "使用 Python: $($PYTHON --version)"
-    
+
     # 检查 PyInstaller
     if ! $PYTHON -m PyInstaller --version &> /dev/null; then
         print_step "安装 PyInstaller..."
         $PYTHON -m pip install pyinstaller
     fi
-    
+
     # 安装依赖
     print_step "安装依赖..."
     $PYTHON -m pip install -r requirements.txt --quiet
-    
+
     # 构建
     print_step "正在打包..."
     $PYTHON -m PyInstaller voicesync.spec --noconfirm
-    
+
     # 创建 ZIP
     print_step "正在创建 ZIP..."
     cd dist
@@ -114,7 +114,7 @@ build_windows() {
         # Fallback: 使用 PowerShell
         powershell -Command "Compress-Archive -Path 'VoiceSync' -DestinationPath '$OUTPUT_DIR/VoiceSync-Windows.zip' -Force"
     fi
-    
+
     SIZE=$(du -sh "$OUTPUT_DIR/VoiceSync-Windows.zip" | cut -f1)
     print_success "Windows 应用构建完成: $OUTPUT_DIR/VoiceSync-Windows.zip ($SIZE)"
 }
