@@ -53,6 +53,13 @@ VoiceSyncAndroid/captures/
 VoiceSyncAndroid/.externalNativeBuild/
 VoiceSyncAndroid/.cxx/
 
+# ==================== Windows / Python ====================
+VoiceSyncWindows/build/
+VoiceSyncWindows/dist/
+VoiceSyncWindows/__pycache__/
+*.pyc
+*.pyo
+
 # ==================== 通用 ====================
 # macOS 系统文件
 .DS_Store

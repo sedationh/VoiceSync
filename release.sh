@@ -46,6 +46,7 @@ fi
 MISSING_ARTIFACTS=0
 MAC_APP=""
 ANDROID_APK=""
+WINDOWS_ZIP=""
 
 if [ ! -d "dist/VoiceSyncMac.app" ]; then
     echo "⚠️  Warning: 'dist/VoiceSyncMac.app' is missing."
@@ -61,6 +62,14 @@ if [ ! -f "dist/VoiceSync-Android.apk" ]; then
 else
     ANDROID_APK="dist/VoiceSync-Android.apk"
     echo "✅ Found Android APK: VoiceSync-Android.apk"
+fi
+
+if [ ! -f "dist/VoiceSync-Windows.zip" ]; then
+    echo "⚠️  Warning: 'dist/VoiceSync-Windows.zip' is missing."
+    MISSING_ARTIFACTS=1
+else
+    WINDOWS_ZIP="dist/VoiceSync-Windows.zip"
+    echo "✅ Found Windows ZIP: VoiceSync-Windows.zip"
 fi
 
 if [ $MISSING_ARTIFACTS -eq 1 ]; then
@@ -153,6 +162,7 @@ if gh release view "$TAG_NAME" >/dev/null 2>&1; then
         echo "⬆️  Uploading files to existing release '$TAG_NAME'..."
         [ -n "$MAC_APP" ] && [ -f "$MAC_ZIP" ] && gh release upload "$TAG_NAME" "$MAC_ZIP" --clobber
         [ -n "$ANDROID_APK" ] && gh release upload "$TAG_NAME" "$ANDROID_APK" --clobber
+        [ -n "$WINDOWS_ZIP" ] && gh release upload "$TAG_NAME" "$WINDOWS_ZIP" --clobber
         echo "✅ Upload complete."
     else
         echo "   Operation cancelled."
@@ -166,6 +176,9 @@ else
 
 ## 📥 下载说明
 
+### Windows 用户
+下载 **VoiceSync-Windows.zip**，解压后运行 \`VoiceSync.exe\` 即可，无需安装 Python。
+
 ### macOS 用户
 下载 **VoiceSyncMac.zip**，解压后将 \`VoiceSyncMac.app\` 拖入应用程序文件夹。
 
@@ -176,7 +189,7 @@ else
 ### Android 用户
 下载 **VoiceSync-Android.apk**，直接安装即可。
 
-需要手机和 Mac 连接在同一 Wi-Fi 网络下。
+需要手机和电脑连接在同一 Wi-Fi 网络下。
 
 ---
 
@@ -185,25 +198,19 @@ else
 - 🎤 手机语音输入，文字自动同步到电脑
 - ⚡ 智能自动发送（停止说话 2 秒后自动发送）
 - 🧹 自动清除内容（发送成功后 3 秒自动清空）
-- ⌨️ 自动粘贴（可选自动执行 Cmd+V）
+- ⌨️ 自动粘贴（可选自动执行 Ctrl+V / Cmd+V）
 - 🔄 同步历史记录
-- 📱 IP 地址历史管理
+- 📱 mDNS 自动发现设备
 
 ---
 
 ## 🚀 快速开始
 
-1. **Mac 端**：打开应用，查看显示的本机 IP 地址
-2. **Android 端**：打开应用，设置中输入 Mac 的 IP 地址
+1. **电脑端**：打开应用，查看显示的本机 IP 地址
+2. **Android 端**：打开应用，点击扫描按钮自动发现电脑，或手动输入 IP 地址
 3. **开始使用**：在手机上说话，文字自动出现在电脑上
 
-详细使用说明请查看 [README](https://github.com/sedaoturak/VoiceSync/blob/main/README.md)
-
----
-
-## 📊 效率提升
-
-使用语音识别相比传统打字，效率提升超过 **10 倍**，每天可节省 **30-40 分钟**。
+详细使用说明请查看 [README](https://github.com/sedationh/VoiceSync/blob/main/README.md)
 "
     
     # Create release with detailed notes
@@ -213,6 +220,7 @@ else
     UPLOAD_FILES=()
     [ -n "$MAC_APP" ] && [ -f "$MAC_ZIP" ] && UPLOAD_FILES+=("$MAC_ZIP")
     [ -n "$ANDROID_APK" ] && UPLOAD_FILES+=("$ANDROID_APK")
+    [ -n "$WINDOWS_ZIP" ] && UPLOAD_FILES+=("$WINDOWS_ZIP")
     
     if [ ${#UPLOAD_FILES[@]} -eq 0 ]; then
         echo "❌ Error: No files to upload."
