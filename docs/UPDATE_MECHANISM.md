@@ -6,8 +6,8 @@
 
 ## 工作原理
 
-1. **版本号管理**：从 git tag 自动读取版本号（如 `v0.0.5`）
-2. **CI 自动构建**：推送 tag 触发 GitHub Actions，自动构建 Android APK 和 Mac app
+1. **版本号管理**：从 git tag 自动读取版本号（如 `v0.3.0`）
+2. **CI 自动构建**：推送 tag 触发 GitHub Actions，自动构建 Android APK、Mac app 和 Windows ZIP
 3. **发布到 Release**：构建产物自动发布到 GitHub Releases
 4. **应用内检查**：用户点击"检查更新"，应用请求 GitHub API 获取最新版本并对比
 
@@ -16,16 +16,17 @@
 ## 发布新版本
 
 ```bash
-# 1. 确保所有修改已提交
-git add .
-git commit -m "feat: 新功能描述"
-git push
+# 1. 确保 main 干净且已推到远端
+git checkout main
+git pull --ff-only
+git status --short --branch
 
 # 2. 打 tag（版本号遵循语义化版本）
-git tag v0.0.6
-git push origin v0.0.6
+git tag -a v0.3.1 -m "VoiceSync v0.3.1"
+git push origin v0.3.1
 
-# 3. GitHub Actions 自动构建并发布，等待几分钟即可
+# 3. GitHub Actions 自动构建并发布
+gh run list --workflow Release --limit 5
 ```
 
 ### 版本号规则
@@ -51,7 +52,7 @@ git push origin v0.0.6
 keytool -list -keystore ~/.android/debug.keystore -storepass android
 
 # CI 构建的 APK 指纹
-apksigner verify --print-certs VoiceSync-Android-0.0.6.apk
+apksigner verify --print-certs VoiceSync-Android-0.3.1.apk
 
 # SHA-256 必须完全一致
 ```
@@ -69,7 +70,7 @@ apksigner verify --print-certs VoiceSync-Android-0.0.6.apk
 5. 用户点击"下载更新"，跳转浏览器下载 APK
 6. 下载完成后点击安装即可覆盖旧版（签名一致）
 
-### Mac 端
+### Mac / Windows 端
 
 暂未实现自动更新检查，用户需手动前往 GitHub Releases 下载。
 
@@ -110,15 +111,31 @@ suspend fun check(currentVersion: String): UpdateResult? {
 
 ```yaml
 on:
-  push:
-    tags: ['v*']
+    push:
+        tags: ['v*']
 
 jobs:
-  build-and-release:
-    - name: Build Android APK
-    - name: Build Mac app
-    - name: Create Release (上传 APK 和 ZIP)
+    build-mac-android:
+        steps:
+            - name: Build Android APK
+            - name: Build Mac app
+    build-windows:
+        steps:
+            - name: Build Windows executable
+    release:
+        steps:
+            - name: Create Release (上传 APK 和 ZIP)
 ```
+
+### 4. 期望发布产物
+
+每个正式 Release 应至少包含三个资产：
+
+- `VoiceSync-Android-X.Y.Z.apk`
+- `VoiceSyncMac-X.Y.Z.zip`
+- `VoiceSync-Windows-X.Y.Z.zip`
+
+更完整的开发、测试和发布流程见 [CONTRIBUTING.md](../CONTRIBUTING.md)。
 
 ---
 
@@ -128,15 +145,15 @@ jobs:
 
 ```bash
 # 删除本地和远程 tag
-git tag -d v0.0.6
-git push origin :refs/tags/v0.0.6
+git tag -d v0.3.1
+git push origin :refs/tags/v0.3.1
 
 # 删除 GitHub Release
-gh release delete v0.0.6 -y
+gh release delete v0.3.1 -y
 
 # 重新打 tag
-git tag v0.0.6
-git push origin v0.0.6
+git tag -a v0.3.1 -m "VoiceSync v0.3.1"
+git push origin v0.3.1
 ```
 
 ### Q: 安装 APK 时提示"应用未安装"或"签名不一致"？

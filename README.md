@@ -198,6 +198,12 @@ sudo xattr -cr /Applications/VoiceSyncMac.app
 
 ---
 
+## 👩‍💻 参与开发
+
+后续开发、提交 PR、测试和发布流程请看 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
+---
+
 ## 📋 开发计划
 
 - [x] Android 到 Mac 基础同步
