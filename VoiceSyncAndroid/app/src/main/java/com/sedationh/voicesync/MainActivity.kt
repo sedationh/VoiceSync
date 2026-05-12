@@ -183,39 +183,76 @@ class MainActivity : ComponentActivity() {
                 
                 // 图片选择器
                 val imagePickerLauncher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.GetContent()
-                ) { uri: Uri? ->
-                    uri?.let {
-                        logMessage = "处理图片中..."
-                        scope.launch(Dispatchers.IO) {
-                            val result = imageUriToBase64(it)
-                            withContext(Dispatchers.Main) {
-                                if (result != null) {
-                                    val (base64, mimeType) = result
-                                    logMessage = "发送图片中..."
-                                    sendImageToMac(targetIp, base64, mimeType) { success, msg ->
-                                        val time = dateFormat.format(Date())
-                                        val record = SyncRecord(
-                                            timestamp = time,
-                                            content = if (success) "图片 (${base64.length / 1024}KB)" else "图片发送失败",
-                                            success = success,
-                                            message = msg,
-                                            type = "image",
-                                            mimeType = mimeType
-                                        )
-                                        syncRecords = listOf(record) + syncRecords
-                                        
-                                        if (success) {
-                                            logMessage = "图片发送成功 ✅"
-                                            ipHistoryManager.addOrUpdateIp(targetIp)
-                                        } else {
-                                            logMessage = "图片发送失败: $msg"
-                                        }
-                                    }
-                                } else {
-                                    logMessage = "图片处理失败"
-                                }
+                    contract = ActivityResultContracts.GetMultipleContents()
+                ) { uris: List<Uri> ->
+                    if (uris.isEmpty()) {
+                        return@rememberLauncherForActivityResult
+                    }
+
+                    val selectedTargetIp = targetIp
+                    scope.launch {
+                        val total = uris.size
+                        var successCount = 0
+                        var failureCount = 0
+
+                        uris.forEachIndexed { index, uri ->
+                            val current = index + 1
+                            logMessage = if (total == 1) "处理图片中..." else "处理第 $current/$total 张图片中..."
+
+                            val result = withContext(Dispatchers.IO) {
+                                imageUriToBase64(uri)
                             }
+
+                            if (result == null) {
+                                failureCount++
+                                val record = SyncRecord(
+                                    timestamp = dateFormat.format(Date()),
+                                    content = if (total == 1) "图片处理失败" else "图片 $current/$total 处理失败",
+                                    success = false,
+                                    message = "图片处理失败",
+                                    type = "image"
+                                )
+                                syncRecords = listOf(record) + syncRecords
+                                logMessage = if (total == 1) "图片处理失败" else "第 $current/$total 张图片处理失败"
+                                return@forEachIndexed
+                            }
+
+                            val (base64, mimeType) = result
+                            logMessage = if (total == 1) "发送图片中..." else "发送第 $current/$total 张图片中..."
+                            val (success, msg) = withContext(Dispatchers.IO) {
+                                sendImageToMac(selectedTargetIp, base64, mimeType)
+                            }
+
+                            val record = SyncRecord(
+                                timestamp = dateFormat.format(Date()),
+                                content = if (success) {
+                                    if (total == 1) "图片 (${base64.length / 1024}KB)" else "图片 $current/$total (${base64.length / 1024}KB)"
+                                } else {
+                                    if (total == 1) "图片发送失败" else "图片 $current/$total 发送失败"
+                                },
+                                success = success,
+                                message = msg,
+                                type = "image",
+                                mimeType = mimeType
+                            )
+                            syncRecords = listOf(record) + syncRecords
+
+                            if (success) {
+                                successCount++
+                                ipHistoryManager.addOrUpdateIp(selectedTargetIp)
+                                logMessage = if (total == 1) "图片发送成功 ✅" else "已发送 $successCount/$total 张图片"
+                            } else {
+                                failureCount++
+                                logMessage = if (total == 1) "图片发送失败: $msg" else "第 $current/$total 张图片发送失败: $msg"
+                            }
+                        }
+
+                        logMessage = when {
+                            total == 1 && successCount == 1 -> "图片发送成功 ✅"
+                            total == 1 -> "图片发送失败"
+                            failureCount == 0 -> "$total 张图片已全部发送 ✅"
+                            successCount > 0 -> "已发送 $successCount/$total 张，失败 $failureCount 张"
+                            else -> "$total 张图片发送失败"
                         }
                     }
                 }
@@ -868,7 +905,7 @@ class MainActivity : ComponentActivity() {
         }
     }
     
-    private fun sendImageToMac(ipPort: String, base64Image: String, mimeType: String, onResult: (Boolean, String) -> Unit) {
+    private fun sendImageToMac(ipPort: String, base64Image: String, mimeType: String): Pair<Boolean, String> {
         val url = if (ipPort.startsWith("http")) "$ipPort/sync" else "http://$ipPort/sync"
         
         // 构建 JSON 数据
@@ -884,12 +921,17 @@ class MainActivity : ComponentActivity() {
         val requestBody = json.toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
         val request = Request.Builder().url(url).post(requestBody).build()
 
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) { onResult(false, e.message ?: "网络错误") }
-            override fun onResponse(call: Call, response: Response) {
-                response.use { if (it.isSuccessful) onResult(true, "OK") }
+        return try {
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    true to "OK"
+                } else {
+                    false to "HTTP ${response.code}: ${response.message}"
+                }
             }
-        })
+        } catch (e: IOException) {
+            false to (e.message ?: "网络错误")
+        }
     }
 
     private fun sendToMac(ipPort: String, text: String, autoEnter: Boolean = false, onResult: (Boolean, String) -> Unit) {
